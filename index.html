@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debug Detective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Noto+Sans+Bengali:wght@400;600;700&family=Share+Tech+Mono&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS — NOIR DETECTIVE PALETTE
+   ═══════════════════════════════════════ */
+:root {
+  --desk:       #1a1714;   /* near-black charcoal desk surface */
+  --desk-mid:   #252220;   /* slightly lighter desk panel */
+  --desk-edge:  #2e2a27;   /* border/card edge */
+  --manila:     #f0e6c8;   /* evidence file paper */
+  --manila-dark:#e0d0a8;   /* slightly aged manila */
+  --manila-fold:#c8b888;   /* fold lines, shadows */
+  --amber:      #d4922a;   /* desk-lamp accent — primary CTA */
+  --amber-warm: #f0ac3a;   /* hover/glow */
+  --amber-dim:  #8a5c18;   /* subdued amber */
+  --ink:        #1c2d4a;   /* code text — ink blue */
+  --ink-light:  #3a5070;   /* lighter code elements */
+  --danger:     #b02020;   /* blood red — wrong states ONLY */
+  --danger-soft:#d44040;
+  --success:    #2d6e3a;   /* dark green — correct states */
+  --success-soft:#4a9455;
+  --hint-teal:  #2a6e6e;   /* magnifying glass / hint */
+  --paper-line: #c8b478;   /* ruled lines on paper */
+  --stamp-red:  #9a1515;   /* rubber stamp ink */
+  --string-red: #c82020;   /* corkboard string */
+  --cork:       #c49a55;   /* corkboard texture */
+  --cork-dark:  #a07840;
+  --text-dark:  #2a2218;
+  --text-mid:   #5a4a35;
+  --text-light: #9a8870;
+  --white-off:  #faf6ee;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--desk);
+  color: var(--manila);
+  font-family: 'IBM Plex Sans', 'Noto Sans Bengali', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,.03) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,.02) 40px);
+}
+
+/* ═══════════════
+   TYPOGRAPHY
+   ═══════════════ */
+.typewriter { font-family: 'Special Elite', 'Noto Sans Bengali', cursive; }
+.mono       { font-family: 'Share Tech Mono', monospace; }
+.body-text  { font-family: 'IBM Plex Sans', 'Noto Sans Bengali', sans-serif; }
+
+/* ═══════════════
+   DESK LAMP GLOW
+   ═══════════════ */
+.desk-glow {
+  position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 400px; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(212,146,42,.12) 0%, transparent 70%);
+}
+
+/* ═══════════════
+   SCREENS
+   ═══════════════ */
+.screen { display: none; animation: fadeIn .35s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* ═══════════════════════
+   HEADER / NAV BAR
+   ═══════════════════════ */
+#app-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--desk-mid);
+  border-bottom: 2px solid var(--amber-dim);
+  padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 20px rgba(0,0,0,.6);
+}
+#app-header .logo {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.3rem; color: var(--amber-warm);
+  letter-spacing: 2px; text-transform: uppercase;
+}
+#app-header .logo span { color: var(--danger-soft); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.lang-toggle {
+  background: var(--desk-edge); border: 1.5px solid var(--amber-dim);
+  border-radius: 20px; padding: 4px 14px; cursor: pointer;
+  font-size: .82rem; color: var(--amber); font-family: 'IBM Plex Sans', 'Noto Sans Bengali', sans-serif;
+  transition: all .2s;
+}
+.lang-toggle:hover { background: var(--amber-dim); color: var(--manila); }
+.rank-badge {
+  font-family: 'Special Elite', cursive;
+  background: var(--desk-edge); border: 1.5px solid var(--amber-dim);
+  padding: 4px 12px; border-radius: 4px; font-size: .8rem; color: var(--amber-warm);
+}
+.back-btn {
+  background: none; border: 1.5px solid var(--desk-edge);
+  color: var(--text-light); padding: 4px 12px; border-radius: 4px;
+  cursor: pointer; font-size: .82rem; transition: all .2s;
+}
+.back-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+
+/* ═══════════════════════
+   CORKBOARD / CASE LIST
+   ═══════════════════════ */
+#screen-menu { padding: 24px 20px 40px; max-width: 1000px; margin: 0 auto; position: relative; }
+
+.board-title {
+  text-align: center; margin-bottom: 8px;
+  font-family: 'Special Elite', cursive;
+  font-size: 2rem; color: var(--amber-warm);
+  text-shadow: 0 2px 12px rgba(212,146,42,.4);
+  letter-spacing: 3px;
+}
+.board-subtitle {
+  text-align: center; color: var(--text-light);
+  font-size: .9rem; margin-bottom: 28px; font-style: italic;
+}
+
+.stats-bar {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.stat-pill {
+  background: var(--desk-edge); border: 1px solid var(--amber-dim);
+  padding: 6px 16px; border-radius: 20px; font-size: .82rem;
+  color: var(--manila); font-family: 'Share Tech Mono', monospace;
+}
+.stat-pill strong { color: var(--amber-warm); }
+
+/* Corkboard */
+.corkboard {
+  background: var(--cork);
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(180,140,60,.4) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 70%, rgba(120,80,30,.3) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='2' cy='2' r='.6' fill='rgba(100,60,20,.25)'/%3E%3C/svg%3E");
+  border: 8px solid var(--cork-dark);
+  border-radius: 6px;
+  padding: 28px 24px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,.3), 0 4px 30px rgba(0,0,0,.5);
+  position: relative;
+  min-height: 400px;
+}
+
+/* SVG String Canvas */
+#string-canvas {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+  position: relative; z-index: 2;
+}
+
+/* Case Pin Card */
+.case-pin {
+  background: var(--manila);
+  border-radius: 3px;
+  padding: 14px 12px 10px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.2);
+  position: relative;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  min-height: 130px;
+  border-top: 3px solid var(--manila-dark);
+  transform: rotate(var(--tilt, 0deg));
+}
+.case-pin:hover:not(.locked) {
+  transform: rotate(var(--tilt, 0deg)) translateY(-4px) scale(1.03);
+  box-shadow: 3px 8px 20px rgba(0,0,0,.5);
+  z-index: 3;
+}
+.case-pin.locked {
+  opacity: .55; cursor: not-allowed; filter: grayscale(.5);
+}
+.case-pin.solved { border-top-color: var(--success); }
+.case-pin.tutorial { border-top-color: var(--hint-teal); }
+
+/* Pin dot */
+.pin-dot {
+  width: 16px; height: 16px;
+  background: var(--amber);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5), inset 0 -2px 4px rgba(0,0,0,.2);
+  position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  border: 1.5px solid var(--amber-dim);
+}
+.case-pin.solved .pin-dot { background: var(--success); }
+.case-pin.locked .pin-dot { background: #888; }
+.case-pin.tutorial .pin-dot { background: var(--hint-teal); }
+
+.case-num {
+  font-family: 'Special Elite', cursive;
+  font-size: .72rem; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+}
+.case-title {
+  font-family: 'Special Elite', cursive;
+  font-size: .88rem; color: var(--text-dark);
+  line-height: 1.3; margin-bottom: 6px;
+}
+.case-type-tag {
+  display: inline-block;
+  background: var(--manila-dark);
+  border-radius: 2px;
+  padding: 1px 6px;
+  font-size: .68rem;
+  color: var(--text-mid);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.case-status-icon {
+  position: absolute; bottom: 8px; right: 10px;
+  font-size: 1.2rem;
+}
+
+/* ═══════════════════════
+   CASE SCREEN
+   ═══════════════════════ */
+#screen-case { padding: 20px; max-width: 860px; margin: 0 auto; }
+
+.case-header {
+  background: var(--desk-edge);
+  border: 1.5px solid var(--amber-dim);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.case-badge {
+  font-family: 'Special Elite', cursive;
+  background: var(--amber-dim);
+  color: var(--manila);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: .9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.case-desc { color: var(--manila); line-height: 1.6; font-size: .95rem; }
+.case-desc strong { color: var(--amber-warm); }
+
+/* Evidence File — Code Viewer */
+.evidence-file {
+  background: var(--manila);
+  border-radius: 4px;
+  box-shadow: 2px 4px 18px rgba(0,0,0,.4), inset 0 0 0 1px var(--manila-fold);
+  overflow: hidden;
+  margin-bottom: 16px;
+  position: relative;
+}
+.evidence-file::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber), var(--amber-dim));
+}
+.file-header {
+  background: var(--manila-dark);
+  padding: 8px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--manila-fold);
+}
+.file-label {
+  font-family: 'Special Elite', cursive;
+  font-size: .78rem; color: var(--text-mid);
+  text-transform: uppercase; letter-spacing: 2px;
+}
+.file-stamp {
+  margin-left: auto;
+  font-family: 'Special Elite', cursive;
+  font-size: .68rem; color: var(--amber-dim);
+  text-transform: uppercase; letter-spacing: 1px;
+  border: 1px solid var(--amber-dim);
+  padding: 1px 6px; border-radius: 2px;
+}
+
+.code-area { padding: 0; }
+.code-line {
+  display: flex; align-items: stretch;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .9rem;
+  border-bottom: 1px solid rgba(200,180,120,.2);
+  cursor: pointer;
+  transition: background .15s;
+  min-height: 34px;
+}
+.code-line:last-child { border-bottom: none; }
+.code-line:hover { background: rgba(212,146,42,.12); }
+.code-line.selected-line { background: rgba(212,146,42,.25); }
+.code-line.correct-line { background: rgba(74,148,85,.2); }
+.code-line.wrong-line { background: rgba(176,32,32,.15); animation: shake .3s; }
+.code-line.highlighted-line { background: rgba(42,110,110,.15); }
+
+@keyframes shake {
+  0%,100% { transform:none; }
+  25% { transform:translateX(-4px); }
+  75% { transform:translateX(4px); }
+}
+
+.line-num {
+  flex-shrink: 0; width: 40px;
+  background: var(--manila-dark);
+  color: var(--text-light);
+  font-size: .72rem;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--manila-fold);
+  font-family: 'Share Tech Mono', monospace;
+  user-select: none;
+}
+.line-content {
+  padding: 6px 14px;
+  color: var(--ink);
+  white-space: pre;
+  flex: 1;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+.line-select-indicator {
+  flex-shrink: 0; width: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem;
+  color: transparent;
+}
+.code-line.selected-line .line-select-indicator { color: var(--amber); }
+.code-line.correct-line .line-select-indicator { color: var(--success); }
+.code-line.wrong-line .line-select-indicator { color: var(--danger); }
+
+/* Output area */
+.output-area {
+  background: var(--ink);
+  border-radius: 0 0 4px 4px;
+  padding: 12px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .85rem;
+  min-height: 48px;
+  color: #a8d8a8;
+  border-top: 2px solid var(--amber-dim);
+  display: none;
+}
+.output-area.visible { display: block; }
+.output-area.error-output { color: #ff8888; }
+.output-label {
+  font-size: .68rem; text-transform: uppercase;
+  letter-spacing: 1px; color: #5a7a5a; margin-bottom: 4px;
+}
+.output-area.error-output .output-label { color: #aa6666; }
+
+/* Action buttons row */
+.action-row {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.btn {
+  padding: 9px 20px; border-radius: 4px; border: none;
+  cursor: pointer; font-size: .88rem; font-weight: 600;
+  font-family: 'IBM Plex Sans', 'Noto Sans Bengali', sans-serif;
+  transition: all .18s; display: flex; align-items: center; gap: 6px;
+  letter-spacing: .3px;
+}
+.btn:focus-visible { outline: 2px solid var(--amber-warm); outline-offset: 2px; }
+.btn-primary { background: var(--amber); color: #1a1200; }
+.btn-primary:hover { background: var(--amber-warm); transform: translateY(-1px); }
+.btn-hint { background: var(--hint-teal); color: #e0f8f8; }
+.btn-hint:hover { background: #3a8e8e; transform: translateY(-1px); }
+.btn-secondary { background: var(--desk-edge); color: var(--manila); border: 1.5px solid var(--amber-dim); }
+.btn-secondary:hover { background: var(--amber-dim); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* Step instructions */
+.step-instruction {
+  background: var(--desk-edge); border-left: 3px solid var(--amber);
+  padding: 10px 14px; border-radius: 0 4px 4px 0;
+  font-size: .88rem; color: var(--manila); line-height: 1.5;
+  margin-bottom: 14px;
+}
+.step-label {
+  font-family: 'Special Elite', cursive;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--amber); margin-bottom: 3px;
+}
+
+/* Fix options */
+.fix-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.fix-option {
+  background: var(--manila);
+  border: 2px solid var(--manila-fold);
+  border-radius: 4px;
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all .15s;
+}
+.fix-option:hover { border-color: var(--amber); background: var(--white-off); }
+.fix-option.selected { border-color: var(--amber); background: rgba(212,146,42,.1); }
+.fix-option.correct { border-color: var(--success); background: rgba(45,110,58,.08); }
+.fix-option.wrong { border-color: var(--danger); background: rgba(176,32,32,.06); }
+.fix-option-key {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .78rem; background: var(--manila-dark);
+  padding: 2px 8px; border-radius: 3px; color: var(--text-mid);
+  flex-shrink: 0;
+}
+.fix-option-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .88rem; color: var(--ink);
+  flex: 1;
+}
+.fix-option-icon { flex-shrink: 0; font-size: 1rem; }
+
+/* Free-type input */
+.free-input-area { margin-bottom: 14px; }
+.free-input-area textarea {
+  width: 100%;
+  background: var(--manila);
+  border: 2px solid var(--manila-fold);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .9rem; color: var(--ink);
+  resize: vertical; min-height: 80px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .free-input-area textarea:focus {
+    outline: none; border-color: var(--amber);
+  }
+  .free-input-area textarea.invalid-input {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(176,32,32,.15);
+    background: rgba(176,32,32,.06);
+    border: 1.5px solid var(--danger-soft);
+  }
+  .feedback-panel {
+    display: none;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: rgba(30, 24, 18, 0.12);
+  }
+  .feedback-panel.visible { display: block; }
+.feedback-panel.wrong-fb {
+  background: rgba(176,32,32,.08);
+  border: 1.5px solid var(--danger-soft);
+}
+.feedback-panel.correct-fb {
+  background: rgba(45,110,58,.1);
+  border: 1.5px solid var(--success-soft);
+}
+.feedback-panel.hint-fb {
+  background: rgba(42,110,110,.1);
+  border: 1.5px solid var(--hint-teal);
+}
+.fb-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.fb-icon { font-size: 1.2rem; }
+.fb-title {
+  font-family: 'Special Elite', cursive;
+  font-size: .85rem; text-transform: uppercase; letter-spacing: 1px;
+}
+.feedback-panel.correct-fb .fb-title { color: var(--success-soft); }
+.feedback-panel.wrong-fb .fb-title { color: var(--danger-soft); }
+.feedback-panel.hint-fb .fb-title { color: #5ababa; }
+.fb-body { font-size: .88rem; color: var(--manila); line-height: 1.6; }
+
+/* Attempt counter */
+.attempt-tracker {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .8rem; color: var(--text-light);
+  margin-bottom: 10px;
+}
+.attempt-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--desk-edge); border: 1.5px solid var(--amber-dim);
+}
+.attempt-dot.used { background: var(--danger-soft); border-color: var(--danger); }
+.attempt-dot.current { border-color: var(--amber-warm); animation: pulse-dot 1s infinite; }
+@keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 0 rgba(212,146,42,.5); } 50% { box-shadow:0 0 0 4px rgba(212,146,42,0); } }
+
+/* ════════════════════════
+   CASE CLOSED STAMP OVERLAY
+   ════════════════════════ */
+#stamp-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(20,16,12,.75);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+#stamp-overlay.visible { opacity: 1; pointer-events: all; }
+.stamp-card {
+  background: var(--manila);
+  border-radius: 6px;
+  padding: 36px 48px;
+  text-align: center;
+  box-shadow: 0 10px 60px rgba(0,0,0,.6);
+  position: relative;
+  max-width: 380px;
+  width: 90%;
+}
+.stamp-mark {
+  font-family: 'Special Elite', cursive;
+  font-size: 2.4rem;
+  color: var(--stamp-red);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  border: 4px solid var(--stamp-red);
+  display: inline-block;
+  padding: 6px 18px;
+  transform: rotate(-8deg) scale(0);
+  transform-origin: center;
+  animation: stamp-down .5s .15s cubic-bezier(.17,.67,.55,1.4) forwards;
+  text-shadow: 1px 1px 0 rgba(154,21,21,.3);
+  opacity: .88;
+  margin-bottom: 16px;
+}
+@keyframes stamp-down {
+  from { transform: rotate(-8deg) scale(2.2); opacity: 0; }
+  60% { opacity: .9; }
+  to { transform: rotate(-8deg) scale(1); opacity: .88; }
+}
+.stamp-rank {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.3rem; color: var(--amber);
+  margin-bottom: 8px;
+}
+.stamp-score-detail {
+  font-size: .85rem; color: var(--text-mid);
+  margin-bottom: 20px; line-height: 1.6;
+}
+.stamp-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ════════════════════════
+   RESULTS / TEACHER SUMMARY
+   ════════════════════════ */
+#screen-results { padding: 20px; max-width: 820px; margin: 0 auto; }
+.results-title {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.8rem; color: var(--amber-warm);
+  text-align: center; margin-bottom: 4px;
+}
+.results-sub { text-align: center; color: var(--text-light); margin-bottom: 20px; font-size: .88rem; }
+.results-table {
+  background: var(--manila);
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%; border-collapse: collapse;
+  box-shadow: 2px 4px 16px rgba(0,0,0,.35);
+  margin-bottom: 20px;
+}
+.results-table th {
+  background: var(--manila-dark);
+  font-family: 'Special Elite', cursive;
+  font-size: .8rem; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-mid);
+  padding: 10px 14px; text-align: left;
+}
+.results-table td {
+  padding: 9px 14px; font-size: .88rem; color: var(--text-dark);
+  border-bottom: 1px solid var(--manila-fold);
+  font-family: 'Share Tech Mono', monospace;
+}
+.results-table tr:last-child td { border-bottom: none; }
+.results-table tr:nth-child(even) td { background: rgba(200,180,120,.08); }
+.rank-cell { font-family: 'Special Elite', cursive; color: var(--amber-dim); }
+.rank-cell.master { color: var(--amber); }
+.rank-cell.skilled { color: var(--text-mid); }
+
+.results-overall {
+  background: var(--desk-edge);
+  border: 1.5px solid var(--amber-dim);
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: flex; gap: 20px; flex-wrap: wrap;
+  justify-content: space-around; margin-bottom: 20px;
+  text-align: center;
+}
+.overall-stat { }
+.overall-num {
+  font-family: 'Special Elite', cursive;
+  font-size: 2rem; color: var(--amber-warm);
+  display: block;
+}
+.overall-label { font-size: .78rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; }
+
+@media print {
+  html, body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+  .screen { display: none !important; }
+  #screen-results {
+    display: block !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  #screen-results > div {
+    max-width: none !important;
+    padding: 0 16px 16px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  #app-header, .btn, .lang-toggle, .back-btn, .stamp-actions, .results-sub, footer, .btn-print, .action-row, #stamp-overlay {
+    display: none !important;
+  }
+  .results-title {
+    font-size: 1.6rem !important;
+    color: #000 !important;
+    line-height: 1.2 !important;
+    margin-bottom: 10px !important;
+    word-break: normal !important;
+    white-space: normal !important;
+  }
+  .results-overall {
+    border-color: #999 !important;
+    background: #f6f6f6 !important;
+    padding: 18px !important;
+    gap: 14px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-rows: minmax(auto, auto) !important;
+    align-items: stretch !important;
+    text-align: left !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid-column !important;
+  }
+  .results-overall .overall-stat {
+    flex: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+  .results-overall .overall-stat:last-child {
+    border-bottom: none !important;
+  }
+  .results-overall .overall-num {
+    font-size: 1.7rem !important;
+    color: #000 !important;
+  }
+  .results-overall .overall-label {
+    display: block !important;
+    font-size: .88rem !important;
+    color: #333 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .5px !important;
+    margin-top: 6px !important;
+  }
+  .results-table {
+    box-shadow: none !important;
+    background: #fff !important;
+    border: 1px solid #999 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .results-table th,
+  .results-table td {
+    color: #000 !important;
+    background: transparent !important;
+    padding: 8px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    min-width: 0 !important;
+  }
+  .results-table th {
+    font-weight: 700 !important;
+  }
+}
+
+/* Hard Mode */
+.hard-mode-panel {
+  background: rgba(155,30,30,.1);
+  border: 1.5px solid var(--danger-soft);
+  border-radius: 6px; padding: 14px 18px;
+  margin-bottom: 20px; display: none;
+}
+.hard-mode-panel.visible { display: block; }
+.hard-mode-title {
+  font-family: 'Special Elite', cursive;
+  color: var(--danger-soft); font-size: 1.1rem; margin-bottom: 6px;
+}
+
+/* Timer */
+.timer-display {
+  background: var(--desk-edge); border: 1.5px solid var(--danger-soft);
+  border-radius: 4px; padding: 4px 14px;
+  font-family: 'Share Tech Mono', monospace; color: var(--danger-soft);
+  font-size: 1.1rem; display: none;
+}
+.timer-display.visible { display: inline-block; }
+.timer-display.urgent { animation: blink .6s step-end infinite; color: var(--danger); }
+@keyframes blink { 50% { opacity:.4; } }
+
+/* ════════════════════════
+   COLD CASE ARCHIVE
+   ════════════════════════ */
+#screen-archive { padding: 20px; max-width: 700px; margin: 0 auto; }
+.archive-title {
+  font-family: 'Special Elite', cursive;
+  font-size: 1.6rem; color: var(--amber-warm);
+  margin-bottom: 6px;
+}
+.archive-sub { color: var(--text-light); margin-bottom: 20px; font-size: .88rem; }
+.archive-list { display: flex; flex-direction: column; gap: 10px; }
+.archive-item {
+  background: var(--manila);
+  border-radius: 4px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 1px 2px 8px rgba(0,0,0,.2);
+  cursor: pointer; transition: transform .15s;
+}
+.archive-item:hover { transform: translateX(4px); }
+.archive-stamp {
+  font-family: 'Special Elite', cursive;
+  font-size: .65rem; text-transform: uppercase;
+  letter-spacing: 2px; color: var(--stamp-red);
+  border: 1.5px solid var(--stamp-red);
+  padding: 2px 6px; border-radius: 2px; transform: rotate(-3deg);
+  flex-shrink: 0; opacity: .8;
+}
+.archive-info { flex: 1; }
+.archive-case-title { font-family: 'Special Elite', cursive; color: var(--text-dark); font-size: .95rem; }
+.archive-case-rank { font-size: .78rem; color: var(--text-mid); font-family: 'Share Tech Mono', monospace; }
+
+/* ════════════
+   FOOTER
+   ════════════ */
+footer {
+  text-align: center; padding: 20px;
+  color: var(--text-light); font-size: .75rem;
+  border-top: 1px solid var(--desk-edge);
+  margin-top: 40px;
+}
+footer a { color: var(--amber-dim); text-decoration: none; }
+
+/* ════════════════
+   RESPONSIVE
+   ════════════════ */
+@media (max-width: 600px) {
+  .cases-grid { grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 14px; }
+  .case-pin { min-height: 100px; }
+  .board-title { font-size: 1.4rem; }
+  .case-header { flex-direction: column; gap: 8px; }
+  #screen-case { padding: 12px; }
+  .action-row { gap: 8px; }
+  .btn { padding: 8px 14px; font-size: .82rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-mark { animation: none; transform: rotate(-8deg) scale(1); opacity: .88; }
+  .screen { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
+
+/* Tutorial highlight */
+.tutorial-highlight {
+  box-shadow: 0 0 0 3px var(--hint-teal), 0 0 14px rgba(42,110,110,.5);
+  border-radius: 4px;
+}
+
+/* Magnifying cursor on hint */
+.hint-mode * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232a6e6e' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='22' y2='22'/%3E%3C/svg%3E") 12 12, crosshair; }
+
+/* Progress indicator */
+.case-progress-bar {
+  background: var(--desk-edge);
+  border-radius: 2px; height: 4px; margin-bottom: 16px;
+  overflow: hidden;
+}
+.case-progress-fill {
+  height: 100%; background: var(--amber);
+  border-radius: 2px; transition: width .4s;
+}
+
+/* Hint glow on buggy line */
+.hint-glow-line {
+  background: rgba(42,110,110,.22) !important;
+  animation: hint-pulse 1s ease-in-out 3;
+}
+@keyframes hint-pulse {
+  0%,100% { background: rgba(42,110,110,.22); }
+  50%      { background: rgba(42,110,110,.44); }
+}
+
+/* XP badge in header */
+.xp-badge {
+  font-family: 'Share Tech Mono', monospace;
+  background: var(--desk-edge); border: 1.5px solid var(--amber-dim);
+  padding: 4px 12px; border-radius: 4px; font-size: .8rem; color: #ffd700;
+  display: flex; align-items: center; gap: 4px;
+}
+.xp-badge .xp-gain {
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+  font-size: .75rem; color: #ffd700; font-weight: bold;
+  animation: xp-float 1.5s ease-out forwards;
+  pointer-events: none; white-space: nowrap;
+}
+@keyframes xp-float {
+  0%   { opacity:1; transform:translateX(-50%) translateY(0); }
+  100% { opacity:0; transform:translateX(-50%) translateY(-28px); }
+}
+
+/* Keyboard shortcut key badge on fix options */
+.kbd-badge {
+  display: inline-block; background: var(--manila-dark);
+  border: 1px solid var(--manila-fold); border-bottom: 2px solid var(--manila-fold);
+  border-radius: 3px; padding: 0px 5px; font-size: .7rem;
+  color: var(--text-mid); font-family: 'Share Tech Mono', monospace;
+  margin-left: 6px; vertical-align: middle; line-height: 1.5;
+}
+
+/* Confetti canvas */
+#confetti-canvas {
+  position: fixed; inset: 0; pointer-events: none; z-index: 300;
+}
+
+/* Print button */
+.btn-print {
+  background: var(--desk-edge); color: var(--manila);
+  border: 1.5px solid var(--amber-dim);
+}
+.btn-print:hover { background: var(--amber-dim); }
+
+/* Keyboard shortcut hint strip */
+.kb-strip {
+  font-size: .72rem; color: var(--text-light);
+  font-family: 'Share Tech Mono', monospace;
+  text-align: right; margin-bottom: 6px; opacity: .75;
+}
+</style>
+</head>
+<body>
+
+<div class="desk-glow"></div>
+
+<!-- ═══ HEADER ═══ -->
+<header id="app-header">
+  <div class="logo typewriter"><span>🔍</span> Debug Detective</div>
+  <div class="header-right">
+    <div class="timer-display mono" id="timer-display">00:00</div>
+    <div class="xp-badge mono" id="xp-badge">XP 0</div>
+    <div class="rank-badge typewriter" id="header-rank">Rookie</div>
+    <button class="lang-toggle body-text" id="lang-btn" onclick="toggleLang()" aria-label="Toggle language">বাং / EN</button>
+    <button class="back-btn body-text" id="back-btn" onclick="goBack()" style="display:none">← <span data-en="Menu" data-bn="মেনু">Menu</span></button>
+  </div>
+</header>
+
+<!-- ═══ SCREEN: MENU ═══ -->
+<div class="screen active" id="screen-menu">
+  <div style="max-width:1000px;margin:0 auto;padding:24px 20px 40px;">
+    <h1 class="board-title typewriter" data-en="EVIDENCE BOARD" data-bn="প্রমাণ বোর্ড">EVIDENCE BOARD</h1>
+    <p class="board-subtitle body-text" data-en="Select a case file to begin your investigation" data-bn="তদন্ত শুরু করতে একটি কেস ফাইল বেছে নাও">Select a case file to begin your investigation</p>
+    <div class="stats-bar">
+      <div class="stat-pill mono">📁 <strong id="stat-solved">0</strong>/<strong>11</strong> <span data-en="Cases Solved" data-bn="কেস সমাধান">Cases Solved</span></div>
+      <div class="stat-pill mono">🔥 <span data-en="Streak:" data-bn="ধারাবাহিক:">Streak:</span> <strong id="stat-streak">0</strong></div>
+      <div class="stat-pill mono">🔍 <span data-en="Hints Used:" data-bn="ইঙ্গিত ব্যবহার:">Hints Used:</span> <strong id="stat-hints">0</strong></div>
+      <div class="stat-pill mono">🏅 <span data-en="Rank:" data-bn="পদমর্যাদা:">Rank:</span> <strong id="stat-rank">Rookie</strong></div>
+    </div>
+    <div class="corkboard" id="corkboard">
+      <svg id="string-canvas" aria-hidden="true"></svg>
+      <div class="cases-grid" id="cases-grid"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
+      <button class="btn btn-secondary body-text" onclick="showScreen('screen-archive')">🗂️ <span data-en="Cold Case Files" data-bn="পুরনো কেস আর্কাইভ">Cold Case Files</span></button>
+      <button id="lock-toggle-btn" class="btn btn-secondary body-text" style="display:none" onclick="toggleCaseLocking()">🔓 <span data-en="Unlock all cases" data-bn="সব কেস আনলক করো">Unlock all cases</span></button>
+    <button class="btn btn-secondary body-text" onclick="showScreen('screen-results')">📊 <span data-en="Teacher Summary" data-bn="শিক্ষক সারসংক্ষেপ">Teacher Summary</span></button>
+      <button class="btn btn-secondary body-text" onclick="restartGame()">🔄 <span data-en="Restart Game" data-bn="গেম আবার শুরু করো">Restart Game</span></button>
+    </div>
+  </div>
+  <footer>
+    <p data-en="Designed by Md. Raiyan Ibne Kamal" data-bn="ডিজাইন করেছেন মোঃ রাইয়ান ইবনে কামাল">Designed by Md. Raiyan Ibne Kamal</p>
+    <p style="margin-top:4px;">Class 9–10 ICT · Chapter 6 · <a href="#" onclick="return false;">NCTB Curriculum</a></p>
+  </footer>
+</div>
+
+<!-- ═══ SCREEN: CASE ═══ -->
+<div class="screen" id="screen-case">
+  <div style="max-width:860px;margin:0 auto;padding:20px;">
+    <div class="case-progress-bar"><div class="case-progress-fill" id="case-progress"></div></div>
+    <div class="feedback-panel wrong-fb" id="timeup-banner" style="display:none;margin-bottom:16px;">
+      <div class="fb-header"><span class="fb-icon">⏱️</span><span class="fb-title typewriter" data-en="TIME'S UP — CASE FAILED" data-bn="সময় শেষ — কেস ব্যর্থ">TIME'S UP — CASE FAILED</span></div>
+      <div class="fb-body" data-en="You ran out of time in Hard Mode. Head back to the board and try again." data-bn="হার্ড মোডে তোমার সময় শেষ হয়ে গেছে। বোর্ডে ফিরে গিয়ে আবার চেষ্টা করো।">You ran out of time in Hard Mode. Head back to the board and try again.</div>
+    </div>
+    <div class="case-header">
+      <div class="case-badge typewriter" id="case-badge">CASE #01</div>
+      <div>
+        <div class="case-desc" id="case-desc"></div>
+        <div style="margin-top:8px;" id="attempt-row">
+          <div class="attempt-tracker" id="attempt-dots"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="step-run">
+      <div class="step-instruction">
+        <div class="step-label typewriter" data-en="STEP 1 — REVIEW THE EVIDENCE" data-bn="ধাপ ১ — প্রমাণ পর্যালোচনা">STEP 1 — REVIEW THE EVIDENCE</div>
+        <span data-en="Read the code below. Press 'Run Code' to see what it actually does." data-bn="নিচের কোড পড়ো। 'কোড রান করো' বাটনে চাপো, দেখো আসলে কী হচ্ছে।">Read the code below. Press 'Run Code' to see what it actually does.</span>
+      </div>
+      <div class="evidence-file">
+        <div class="file-header">
+          <span class="file-label typewriter" data-en="EXHIBIT A — SOURCE CODE" data-bn="প্রদর্শনী ক — সোর্স কোড">EXHIBIT A — SOURCE CODE</span>
+          <span class="file-stamp typewriter" id="case-num-stamp">CASE #01</span>
+        </div>
+        <div class="code-area" id="code-lines"></div>
+        <div class="output-area" id="output-area">
+          <div class="output-label mono" id="output-label">OUTPUT</div>
+          <div id="output-text"></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-primary body-text" id="run-btn" onclick="runCode()">▶ <span data-en="Run Code" data-bn="কোড রান করো">Run Code</span></button>
+        <button class="btn btn-hint body-text" id="hint-btn" onclick="useHint()">🔍 <span data-en="Hint (costs rank)" data-bn="ইঙ্গিত (র‍্যাংক কমবে)">Hint (costs rank)</span></button>
+      </div>
+      <div class="feedback-panel hint-fb" id="hint-panel">
+        <div class="fb-header"><span class="fb-icon">🔍</span><span class="fb-title typewriter" data-en="DETECTIVE'S CLUE" data-bn="গোয়েন্দার ইঙ্গিত">DETECTIVE'S CLUE</span></div>
+        <div class="fb-body" id="hint-text"></div>
+      </div>
+    </div>
+
+    <div id="step-suspect" style="display:none">
+      <div class="step-instruction">
+        <div class="step-label typewriter" data-en="STEP 2 — IDENTIFY THE SUSPECT LINE" data-bn="ধাপ ২ — সন্দেহজনক লাইন চিহ্নিত করো">STEP 2 — IDENTIFY THE SUSPECT LINE</div>
+        <span data-en="Click the line of code you think contains the bug." data-bn="তুমি যে লাইনে বাগ আছে মনে করো, সেটিতে ক্লিক করো।">Click the line of code you think contains the bug.</span>
+      </div>
+      <div class="action-row" id="suspect-actions">
+        <button class="btn btn-primary body-text" id="confirm-suspect-btn" onclick="confirmSuspect()" disabled>
+          <span data-en="Confirm Suspect Line" data-bn="সন্দেহজনক লাইন নিশ্চিত করো">Confirm Suspect Line</span> →
+        </button>
+      </div>
+      <div class="feedback-panel" id="suspect-feedback"></div>
+    </div>
+
+    <div id="step-fix" style="display:none">
+      <div class="step-instruction">
+        <div class="step-label typewriter" data-en="STEP 3 — SUBMIT YOUR FIX" data-bn="ধাপ ৩ — সমাধান জমা দাও">STEP 3 — SUBMIT YOUR FIX</div>
+        <span data-en="Choose the correct fix for the buggy line." data-bn="বাগ আছে এমন লাইনের সঠিক সমাধান বেছে নাও।">Choose the correct fix for the buggy line.</span>
+      </div>
+      <div class="fix-options" id="fix-options"></div>
+      <div class="free-input-area" id="free-input-area" style="display:none">
+        <textarea id="free-input" placeholder="Type the corrected line here..."></textarea>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-primary body-text" id="submit-fix-btn" onclick="submitFix()">
+          <span data-en="Submit Fix" data-bn="সমাধান জমা দাও">Submit Fix</span> →
+        </button>
+      </div>
+      <div class="feedback-panel" id="fix-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: RESULTS ═══ -->
+<div class="screen" id="screen-results">
+  <div style="max-width:820px;margin:0 auto;padding:20px;">
+    <h2 class="results-title typewriter" data-en="CASE SUMMARY REPORT" data-bn="কেস সারাংশ রিপোর্ট">CASE SUMMARY REPORT</h2>
+    <p class="results-sub body-text" data-en="Teacher's overview — printable / screenshot-friendly" data-bn="শিক্ষকের সারসংক্ষেপ — প্রিন্ট বা স্ক্রিনশট করা যাবে">Teacher's overview — printable / screenshot-friendly</p>
+    <div class="results-overall" id="results-overall"></div>
+    <table class="results-table" id="results-table">
+      <thead>
+        <tr>
+          <th data-en="Case" data-bn="কেস">Case</th>
+          <th data-en="Topic" data-bn="বিষয়">Topic</th>
+          <th data-en="Status" data-bn="অবস্থা">Status</th>
+          <th data-en="Attempts" data-bn="চেষ্টা">Attempts</th>
+          <th data-en="Hints" data-bn="ইঙ্গিত">Hints</th>
+          <th data-en="Rank" data-bn="পদমর্যাদা">Rank</th>
+        </tr>
+      </thead>
+      <tbody id="results-tbody"></tbody>
+    </table>
+    <div class="hard-mode-panel" id="hard-mode-panel">
+      <div class="hard-mode-title typewriter" data-en="🕵️ HARD MODE UNLOCKED" data-bn="🕵️ হার্ড মোড আনলক হয়েছে">🕵️ HARD MODE UNLOCKED</div>
+      <p style="color:var(--manila);font-size:.88rem;margin-bottom:12px;" data-en="You've solved all cases! Challenge yourself with timed replay — each case has a 90-second limit." data-bn="তুমি সব কেস সমাধান করেছ! এখন টাইমড রিপ্লে দিয়ে নিজেকে চ্যালেঞ্জ করো — প্রতিটি কেসে ৯০ সেকেন্ড সময়।">You've solved all cases! Challenge yourself with timed replay — each case has a 90-second limit.</p>
+      <button class="btn btn-primary body-text" onclick="startHardMode()" data-en="Start Hard Mode" data-bn="হার্ড মোড শুরু করো">Start Hard Mode</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;">
+      <button class="btn btn-print body-text" onclick="window.print()" data-en="🖨️ Print Summary" data-bn="🖨️ সারসংক্ষেপ প্রিন্ট করো">🖨️ Print Summary</button>
+      <button class="btn btn-secondary body-text" onclick="showScreen('screen-menu')" data-en="← Back to Board" data-bn="← বোর্ডে ফিরে যাও">← Back to Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: ARCHIVE ═══ -->
+<div class="screen" id="screen-archive">
+  <div style="max-width:700px;margin:0 auto;padding:20px;">
+    <h2 class="archive-title typewriter" data-en="COLD CASE FILES" data-bn="পুরনো কেস ফাইল">COLD CASE FILES</h2>
+    <p class="archive-sub body-text" data-en="Revisit your solved cases for revision. Your rank won't change." data-bn="পরীক্ষার আগে পুরনো কেস রিভিউ করো। র‍্যাংক পরিবর্তন হবে না।">Revisit your solved cases for revision. Your rank won't change.</p>
+    <div class="archive-list" id="archive-list"></div>
+    <div style="margin-top:20px;text-align:center;">
+      <button class="btn btn-secondary body-text" onclick="showScreen('screen-menu')" data-en="← Back to Board" data-bn="← বোর্ডে ফিরে যাও">← Back to Board</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+<!-- ═══ STAMP OVERLAY ═══ -->
+<div id="stamp-overlay" role="dialog" aria-modal="true">
+  <div class="stamp-card">
+    <div class="stamp-mark typewriter" id="stamp-text">CASE CLOSED</div>
+    <div class="stamp-rank typewriter" id="stamp-rank"></div>
+    <div class="stamp-score-detail" id="stamp-detail"></div>
+    <div class="stamp-actions">
+      <button class="btn btn-primary body-text" id="stamp-next-btn" onclick="nextCase()"><span data-en="Next Case →" data-bn="পরের কেস →">Next Case →</span></button>
+      <button class="btn btn-secondary body-text" onclick="closeStamp(); showScreen('screen-menu')"><span data-en="Back to Board" data-bn="বোর্ডে ফিরে যাও">Back to Board</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   GAME DATA — All 11 cases (0–10)
+   Both EN and BN for every field
+   ═══════════════════════════════════════════════ */
+const CASES = [
+  // ─── CASE 0: TUTORIAL ───
+  {
+    id: 0,
+    isTutorial: true,
+    label: { en: "TUTORIAL", bn: "টিউটোরিয়াল" },
+    title: { en: "Rookie Orientation", bn: "নতুন গোয়েন্দার প্রশিক্ষণ" },
+    type: { en: "Tutorial", bn: "টিউটোরিয়াল" },
+    desc: {
+      en: "Welcome, Detective. This orientation case will walk you through the game controls — no score, no rank change. Pay attention: this is how you'll solve every real case.",
+      bn: "স্বাগতম, গোয়েন্দা। এই প্রশিক্ষণ কেসে গেমের নিয়মকানুন শেখানো হবে — কোনো স্কোর বা র‍্যাংক পরিবর্তন হবে না। মনোযোগ দিয়ে দেখো: এভাবেই প্রতিটি আসল কেস সমাধান করতে হবে।"
+    },
+    code: [
+      { line: 1, text: 'name = "রাহেলা"' },
+      { line: 2, text: 'print("হ্যালো,", name)' }
+    ],
+    bugLine: 2,
+    outputMode: "correct",
+    output: { en: 'হ্যালো, রাহেলা', bn: 'হ্যালো, রাহেলা' },
+    errorOutput: null,
+    hint: { en: "Look carefully — is there actually a bug here? Check what the code prints.", bn: "মনোযোগ দিয়ে দেখো — এখানে আসলে বাগ আছে কি? কোড কী প্রিন্ট করছে?" },
+    fixType: "multiple",
+    options: [
+      { text: 'print("হ্যালো,", name)', correct: true, feedback: { en: "Correct! This code is actually working — the output matches exactly. This was practice to learn the controls.", bn: "সঠিক! এই কোড আসলে ঠিকঠাকই কাজ করছে — আউটপুট একদম ঠিক আছে। এটা শুধু নিয়মকানুন শেখার জন্য ছিল।" } },
+      { text: 'print("হ্যালো " + name)', correct: false, feedback: { en: "Not quite — this would work but changes the output format. The original was already correct.", bn: "না, এটা কাজ করত কিন্তু আউটপুটের ফরম্যাট বদলে যাবে। আসল কোডটাই ঠিক ছিল।" } },
+      { text: 'print(name)', correct: false, feedback: { en: "This would print just the name without the greeting. The original was already correct.", bn: "এটা শুধু নামটাই প্রিন্ট করবে, সালাম ছাড়া। আসল কোডটাই ঠিক ছিল।" } }
+    ]
+  },
+  // ─── CASE 1: Syntax — missing colon ───
+  {
+    id: 1,
+    label: { en: "CASE #01", bn: "কেস #০১" },
+    title: { en: "The Missing Sign", bn: "নিখোঁজ চিহ্ন" },
+    type: { en: "Syntax Error", bn: "সিনট্যাক্স ত্রুটি" },
+    desc: {
+      en: "A student wrote a program to greet users based on their age. The program refuses to run at all — something's wrong before it even starts.",
+      bn: "একজন শিক্ষার্থী বয়স অনুযায়ী অভিবাদন জানানোর প্রোগ্রাম লিখেছে। প্রোগ্রামটি একদমই চলছে না — শুরু হওয়ার আগেই কিছু একটা ভুল আছে।"
+    },
+    code: [
+      { line: 1, text: 'boyosh = 16' },
+      { line: 2, text: 'if boyosh >= 18' },
+      { line: 3, text: '    print("তুমি প্রাপ্তবয়স্ক")' },
+      { line: 4, text: 'else:' },
+      { line: 5, text: '    print("তুমি নাবালক")' }
+    ],
+    bugLine: 2,
+    outputMode: "error",
+    output: { en: "SyntaxError: expected ':'", bn: "SyntaxError: expected ':'" },
+    errorOutput: true,
+    hint: { en: "In Python, a condition (if, else, for, while) must end with a specific punctuation mark.", bn: "Python-এ একটি শর্ত (if, else, for, while) অবশ্যই একটি নির্দিষ্ট বিরামচিহ্ন দিয়ে শেষ হতে হবে।" },
+    fixType: "multiple",
+    options: [
+      { text: 'if boyosh >= 18:', correct: true, feedback: { en: "Correct! In Python, every if/else/for/while statement must end with a colon (:). Without it, Python throws a SyntaxError before running a single line.", bn: "সঠিক! Python-এ প্রতিটি if/else/for/while স্টেটমেন্টের শেষে কোলন (:) থাকতে হবে। না থাকলে Python একটি লাইনও না চালিয়ে SyntaxError দেখাবে।" } },
+      { text: 'if boyosh => 18:', correct: false, feedback: { en: "Close — the colon is right, but => is not a valid operator in Python. Use >= for 'greater than or equal to'.", bn: "প্রায় ঠিক — কোলন সঠিক, কিন্তু => Python-এ বৈধ অপারেটর নয়। 'এর চেয়ে বড় বা সমান' বোঝাতে >= ব্যবহার করো।" } },
+      { text: 'if boyosh > 18:', correct: false, feedback: { en: "The colon is there, good — but > means strictly greater than, so an 18-year-old would be called a minor. The original used >= which includes 18.", bn: "কোলন আছে, ভালো — কিন্তু > মানে শুধু বড়, তাই ১৮ বছর বয়সীকে নাবালক বলবে। আসলে >= ব্যবহার করা উচিত, যা ১৮ সহ সবাইকে ধরবে।" } }
+    ]
+  },
+  // ─── CASE 2: Syntax — unmatched quote ───
+  {
+    id: 2,
+    label: { en: "CASE #02", bn: "কেস #০২" },
+    title: { en: "The Unclosed Witness", bn: "অসম্পূর্ণ সাক্ষী" },
+    type: { en: "Syntax Error", bn: "সিনট্যাক্স ত্রুটি" },
+    desc: {
+      en: "A student's variable assignment refuses to execute. The output screams about an unterminated string — something was left open.",
+      bn: "একজন শিক্ষার্থীর ভেরিয়েবল অ্যাসাইনমেন্ট কাজ করছে না। আউটপুটে 'unterminated string' দেখাচ্ছে — কিছু একটা খোলাই রয়ে গেছে।"
+    },
+    code: [
+      { line: 1, text: 'school = "সরকারি বিদ্যালয়' },
+      { line: 2, text: 'class_name = "দশম শ্রেণী"' },
+      { line: 3, text: 'print(school, class_name)' }
+    ],
+    bugLine: 1,
+    outputMode: "error",
+    output: { en: "SyntaxError: EOL while scanning string literal", bn: "SyntaxError: EOL while scanning string literal" },
+    errorOutput: true,
+    hint: { en: "Strings in Python must start AND end with the same type of quote. Count the quotes on line 1.", bn: "Python-এ স্ট্রিং অবশ্যই একই ধরনের উদ্ধৃতিচিহ্ন দিয়ে শুরু এবং শেষ হতে হবে। ১ নম্বর লাইনে উদ্ধৃতিচিহ্ন গুণে দেখো।" },
+    fixType: "multiple",
+    options: [
+      { text: 'school = "সরকারি বিদ্যালয়"', correct: true, feedback: { en: "Correct! A string literal must be closed with a matching quote. The opening \" on line 1 was never closed, so Python kept reading until the end of the line and panicked.", bn: "সঠিক! স্ট্রিং লিটারেলে শেষ উদ্ধৃতিচিহ্ন অবশ্যই থাকতে হবে। ১ নম্বর লাইনে শুরুর \" বন্ধ করা হয়নি, তাই Python লাইনের শেষ পর্যন্ত পড়ে বিভ্রান্ত হয়ে গেছে।" } },
+      { text: "school = 'সরকারি বিদ্যালয়'", correct: true, feedback: { en: "Also correct! Single quotes work too — as long as they match. Python accepts both ' and \" for strings.", bn: "এটাও সঠিক! একক উদ্ধৃতিচিহ্নও কাজ করবে — শুধু মিলতে হবে। Python স্ট্রিংয়ের জন্য ' এবং \" দুটোই মানে।" } },
+      { text: 'school = সরকারি বিদ্যালয়', correct: false, feedback: { en: "Without any quotes, Python treats this as variable names, not a text value — that's a NameError. Strings need quotes.", bn: "উদ্ধৃতিচিহ্ন ছাড়া Python এটাকে ভেরিয়েবলের নাম মনে করে, টেক্সট মান নয় — সেটা NameError হবে। স্ট্রিংয়ে উদ্ধৃতিচিহ্ন লাগবেই।" } }
+    ]
+  },
+  // ─── CASE 3: Logic — wrong arithmetic operator ───
+  {
+    id: 3,
+    label: { en: "CASE #03", bn: "কেস #০৩" },
+    title: { en: "The Lying Calculator", bn: "মিথ্যাবাদী ক্যালকুলেটর" },
+    type: { en: "Logic Error", bn: "লজিক ত্রুটি" },
+    desc: {
+      en: "A calculator program claims to compute area of a rectangle, but the answer is always wrong. The code runs without error — the crime is hidden inside the math.",
+      bn: "একটি ক্যালকুলেটর প্রোগ্রাম আয়তক্ষেত্রের ক্ষেত্রফল বের করার কথা বলছে, কিন্তু উত্তর সবসময় ভুল। কোড বিনা ত্রুটিতে চলছে — অপরাধটা গণিতের ভেতরে লুকিয়ে আছে।"
+    },
+    code: [
+      { line: 1, text: 'doirgho = 10  # দৈর্ঘ্য' },
+      { line: 2, text: 'proste = 5   # প্রস্থ' },
+      { line: 3, text: 'chetrofol = doirgho + proste' },
+      { line: 4, text: 'print("ক্ষেত্রফল =", chetrofol)' }
+    ],
+    bugLine: 3,
+    outputMode: "wrong",
+    output: { en: "ক্ষেত্রফল = 15  (expected: 50)", bn: "ক্ষেত্রফল = 15  (প্রত্যাশিত: 50)" },
+    errorOutput: false,
+    hint: { en: "Area of a rectangle is length × width — which arithmetic operator gives multiplication in Python?", bn: "আয়তক্ষেত্রের ক্ষেত্রফল = দৈর্ঘ্য × প্রস্থ — Python-এ গুণ করার অপারেটর কোনটা?" },
+    fixType: "multiple",
+    options: [
+      { text: 'chetrofol = doirgho * proste', correct: true, feedback: { en: "Correct! Area = length × width. Python uses * for multiplication, not +. Adding the dimensions gives perimeter/2, not area.", bn: "সঠিক! ক্ষেত্রফল = দৈর্ঘ্য × প্রস্থ। Python-এ গুণের জন্য * ব্যবহার করতে হয়, + নয়। + দিয়ে করলে পরিধির অর্ধেক পাওয়া যায়, ক্ষেত্রফল নয়।" } },
+      { text: 'chetrofol = doirgho ** proste', correct: false, feedback: { en: "** is the power operator — that gives 10^5 = 100000, which is way too large. Area needs simple multiplication: *", bn: "** হলো ঘাতের অপারেটর — এটা দেবে 10^5 = 100000, যা অনেক বেশি। ক্ষেত্রফলের জন্য সাধারণ গুণ * দরকার।" } },
+      { text: 'chetrofol = doirgho - proste', correct: false, feedback: { en: "Subtraction gives 5, which is also wrong. Area of a rectangle is always length multiplied by width: *", bn: "বিয়োগ দিলে ৫ পাওয়া যায়, সেটাও ভুল। আয়তক্ষেত্রের ক্ষেত্রফল সবসময় দৈর্ঘ্য গুণ প্রস্থ: *" } }
+    ]
+  },
+  // ─── CASE 4: Logic — assignment vs comparison ───
+  {
+    id: 4,
+    label: { en: "CASE #04", bn: "কেস #০৪" },
+    title: { en: "The Identity Swap", bn: "পরিচয় বদল" },
+    type: { en: "Logic Error", bn: "লজিক ত্রুটি" },
+    desc: {
+      en: "A grading program checks if a student passed (score ≥ 50). Instead of comparing, it's doing something entirely different — and Python doesn't even complain.",
+      bn: "একটি গ্রেডিং প্রোগ্রাম পরীক্ষা করার কথা যে শিক্ষার্থী পাস করেছে কিনা (নম্বর ≥ ৫০)। তুলনা করার বদলে এটি সম্পূর্ণ আলাদা কিছু করছে — এবং Python কোনো অভিযোগও করছে না।"
+    },
+    code: [
+      { line: 1, text: 'nomor = 75' },
+      { line: 2, text: 'if nomor = 50:' },
+      { line: 3, text: '    print("পাস")' },
+      { line: 4, text: 'else:' },
+      { line: 5, text: '    print("ফেল")' }
+    ],
+    bugLine: 2,
+    outputMode: "error",
+    output: { en: "SyntaxError: invalid syntax (cannot assign inside if condition)", bn: "SyntaxError: invalid syntax (if শর্তের ভেতরে অ্যাসাইন করা যাবে না)" },
+    errorOutput: true,
+    hint: { en: "There's a crucial difference between = (assign a value) and == (check if two things are equal). Which one belongs in an if condition?", bn: "= (মান নির্ধারণ) এবং == (দুটো জিনিস সমান কিনা যাচাই) এর মধ্যে গুরুত্বপূর্ণ পার্থক্য আছে। if শর্তে কোনটা ব্যবহার করতে হয়?" },
+    fixType: "multiple",
+    options: [
+      { text: 'if nomor >= 50:', correct: true, feedback: { en: "Correct! = assigns a value (nomor = 75 means 'set nomor to 75'). == compares two values (nomor == 50 means 'is nomor equal to 50?'). Since we want ≥ 50 to pass, we use >=.", bn: "সঠিক! = মান নির্ধারণ করে (nomor = 75 মানে 'nomor-এর মান ৭৫ করো')। == দুটো মান তুলনা করে (nomor == 50 মানে 'nomor কি ৫০-এর সমান?')। যেহেতু ≥ ৫০ হলে পাস, তাই >= ব্যবহার করতে হবে।" } },
+      { text: 'if nomor == 50:', correct: false, feedback: { en: "Good catch on ==, but this only passes if the score is exactly 50. A score of 75 would still print 'ফেল'. Use >= to include all passing scores.", bn: "== ধরেছ, ভালো — কিন্তু এটা শুধু তখন পাস দেবে যখন নম্বর ঠিক ৫০। ৭৫ নম্বর পেলেও 'ফেল' দেখাবে। সব পাসিং নম্বর ধরতে >= ব্যবহার করো।" } },
+      { text: 'if nomor = 75:', correct: false, feedback: { en: "Still using = instead of == — that's the same bug. And hardcoding 75 means the program only works for one specific score.", bn: "এখনও == এর বদলে = ব্যবহার হচ্ছে — এটা একই বাগ। আর ৭৫ হার্ডকোড করলে প্রোগ্রাম শুধু একটি নির্দিষ্ট নম্বরের জন্যই কাজ করবে।" } }
+    ]
+  },
+  // ─── CASE 5: Conditional logic error — off-by-one boundary ───
+  {
+    id: 5,
+    label: { en: "CASE #05", bn: "কেস #০৫" },
+    title: { en: "The Wrong Voter", bn: "ভুল ভোটার" },
+    type: { en: "Condition Error", bn: "শর্তের ত্রুটি" },
+    desc: {
+      en: "A voter eligibility checker is incorrectly turning away a voter who is exactly 18 — Bangladesh's minimum voting age. The code runs fine — but the comparison is one step too strict.",
+      bn: "একটি ভোটার যোগ্যতা পরীক্ষক ঠিক ১৮ বছর বয়সী (বাংলাদেশের ন্যূনতম ভোটার বয়স) একজন ভোটারকেও ভুলভাবে বাদ দিচ্ছে। কোড ঠিকঠাক চলছে — কিন্তু তুলনাটি এক ধাপ বেশি কড়া।"
+    },
+    code: [
+      { line: 1, text: 'boyosh = 18' },
+      { line: 2, text: 'if boyosh > 18:' },
+      { line: 3, text: '    print("ভোট দিতে পারবে")' },
+      { line: 4, text: 'else:' },
+      { line: 5, text: '    print("ভোট দিতে পারবে না")' }
+    ],
+    bugLine: 2,
+    outputMode: "wrong",
+    output: { en: 'ভোট দিতে পারবে না  (but the voter is exactly 18 — the minimum voting age — so they SHOULD be allowed to vote!)', bn: 'ভোট দিতে পারবে না  (কিন্তু ভোটারের বয়স ঠিক ১৮ — ন্যূনতম ভোটার বয়স — তাই তার ভোট দিতে পারার কথা!)' },
+    errorOutput: false,
+    hint: { en: "Bangladesh's minimum voting age is 18, meaning an 18-year-old SHOULD be allowed to vote. But > 18 means 'strictly greater than 18', so it excludes exactly-18-year-olds. Which comparison includes 18 itself?", bn: "বাংলাদেশে ভোটের ন্যূনতম বয়স ১৮, অর্থাৎ ঠিক ১৮ বছর বয়সীরও ভোট দেওয়ার অধিকার থাকার কথা। কিন্তু > 18 মানে 'ঠিক ১৮-এর চেয়ে বেশি' — তাই এটা ঠিক ১৮ বছর বয়সীকে বাদ দেয়। কোন তুলনা চিহ্ন ১৮কেও অন্তর্ভুক্ত করে?" },
+    fixType: "multiple",
+    options: [
+      { text: 'if boyosh >= 18:', correct: true, feedback: { en: "Correct! >= 18 includes exactly 18 — matching the real rule that 18-year-olds are eligible. The original > 18 excluded them: a classic off-by-one bug.", bn: "সঠিক! >= 18 ঠিক ১৮কেও অন্তর্ভুক্ত করে — যা প্রকৃত নিয়মের সাথে মেলে যে ১৮ বছর বয়সীরাও যোগ্য। আসল > 18 তাদের বাদ দিচ্ছিল — এটাই একটি ক্লাসিক অফ-বাই-ওয়ান বাগ।" } },
+      { text: 'if boyosh > 17:', correct: false, feedback: { en: "This happens to give the same result for whole-number ages, but >= 18 directly matches the real-world rule ('18 or older') and is much clearer to read. Use >= 18.", bn: "পূর্ণসংখ্যা বয়সের জন্য এটা একই ফল দেয়, কিন্তু >= 18 সরাসরি বাস্তব নিয়মের ('১৮ বা তার বেশি') সাথে মেলে এবং পড়তে অনেক স্পষ্ট। >= 18 ব্যবহার করো।" } },
+      { text: 'if boyosh == 18:', correct: false, feedback: { en: "== 18 only allows voters who are exactly 18 — a 25-year-old couldn't vote! Use >= to allow 18 and everyone above.", bn: "== 18 শুধু ঠিক ১৮ বছর বয়সীদের অনুমতি দেয় — ২৫ বছর বয়সী ভোট দিতে পারবে না! >= ব্যবহার করো যা ১৮ এবং তার বেশি সবাইকে ধরবে।" } }
+    ]
+  },
+  // ─── CASE 6: Conditional — inverted if/else ───
+  {
+    id: 6,
+    label: { en: "CASE #06", bn: "কেস #০৬" },
+    title: { en: "The Backwards Thermometer", bn: "উল্টো থার্মোমিটার" },
+    type: { en: "Condition Error", bn: "শর্তের ত্রুটি" },
+    desc: {
+      en: "A temperature checker is saying it's cold when it's hot, and hot when it's cold. Everything runs — but the output is perfectly backwards.",
+      bn: "একটি তাপমাত্রা পরীক্ষক গরম থাকলে ঠান্ডা বলছে, আর ঠান্ডা থাকলে গরম বলছে। সবকিছু চলছে — কিন্তু আউটপুট একদম উল্টো।"
+    },
+    code: [
+      { line: 1, text: 'tapmatra = 38' },
+      { line: 2, text: 'if tapmatra < 36.5:' },
+      { line: 3, text: '    print("জ্বর আছে")' },
+      { line: 4, text: 'else:' },
+      { line: 5, text: '    print("জ্বর নেই")' }
+    ],
+    bugLine: 2,
+    outputMode: "wrong",
+    output: { en: "জ্বর নেই  (but temperature is 38°C — that IS a fever!)", bn: "জ্বর নেই  (কিন্তু তাপমাত্রা ৩৮°C — এটা জ্বর!)" },
+    errorOutput: false,
+    hint: { en: "A normal body temperature is below 36.5°C. Fever means temperature is ABOVE 36.5°C. Which direction should the comparison arrow point?", bn: "স্বাভাবিক শরীরের তাপমাত্রা ৩৬.৫°C-এর কম। জ্বর মানে তাপমাত্রা ৩৬.৫°C-এর বেশি। তুলনার তীর কোন দিকে হওয়া উচিত?" },
+    fixType: "multiple",
+    options: [
+      { text: 'if tapmatra > 36.5:', correct: true, feedback: { en: "Correct! Fever means temperature is greater than normal (36.5°C). The original used < which inverted the logic — it printed 'জ্বর আছে' for cool temperatures and 'জ্বর নেই' for high ones.", bn: "সঠিক! জ্বর মানে তাপমাত্রা স্বাভাবিকের (৩৬.৫°C) চেয়ে বেশি। আসলে < ব্যবহার হয়েছিল যা লজিক উল্টে দিয়েছে — ঠান্ডা তাপমাত্রায় 'জ্বর আছে' এবং বেশি তাপমাত্রায় 'জ্বর নেই' বলছিল।" } },
+      { text: 'if tapmatra >= 36.5:', correct: false, feedback: { en: "Almost — but >= means 36.5°C would show 'জ্বর আছে' when that's actually the normal threshold. Strictly > 36.5 is more accurate here.", bn: "প্রায় ঠিক — কিন্তু >= মানে ৩৬.৫°C তাপমাত্রায়ও 'জ্বর আছে' দেখাবে, যেটা আসলে স্বাভাবিক সীমা। এখানে > ৩৬.৫ বেশি সঠিক।" } },
+      { text: 'if tapmatra < 36.5:', correct: false, feedback: { en: "That's the original buggy line! < 36.5 prints fever for low temperatures — completely backwards.", bn: "এটা আসলে বাগযুক্ত লাইনটাই। < ৩৬.৫ কম তাপমাত্রায় জ্বর দেখাবে — একদম উল্টো।" } }
+    ]
+  },
+  // ─── CASE 7: Loop — off-by-one ───
+  {
+    id: 7,
+    label: { en: "CASE #07", bn: "কেস #০৭" },
+    title: { en: "The Short Counter", bn: "ছোট গণনাকারী" },
+    type: { en: "Loop Error", bn: "লুপ ত্রুটি" },
+    desc: {
+      en: "A program sums numbers 1 through 10. It runs, produces a number — but the sum is consistently one number short of correct.",
+      bn: "একটি প্রোগ্রাম ১ থেকে ১০ পর্যন্ত যোগ করার কথা। এটা চলছে, একটি সংখ্যা দিচ্ছে — কিন্তু যোগফল প্রতিবার ঠিক একটু কম আসছে।"
+    },
+    code: [
+      { line: 1, text: 'jogfol = 0' },
+      { line: 2, text: 'for i in range(1, 10):' },
+      { line: 3, text: '    jogfol = jogfol + i' },
+      { line: 4, text: 'print("১ থেকে ১০ এর যোগ =", jogfol)' }
+    ],
+    bugLine: 2,
+    outputMode: "wrong",
+    output: { en: "১ থেকে ১০ এর যোগ = 45  (expected: 55)", bn: "১ থেকে ১০ এর যোগ = 45  (প্রত্যাশিত: 55)" },
+    errorOutput: false,
+    hint: { en: "Python's range(start, end) goes up to but NOT including the end value. If you want to include 10, what should the end be?", bn: "Python-এর range(start, end) শুধু end-এর আগ পর্যন্ত যায়, end সংখ্যাটি ধরে না। ১০ অন্তর্ভুক্ত করতে end কত হওয়া উচিত?" },
+    fixType: "multiple",
+    options: [
+      { text: 'for i in range(1, 11):', correct: true, feedback: { en: "Correct! range(1, 10) generates: 1,2,3,4,5,6,7,8,9 — stopping before 10. range(1, 11) generates 1 through 10 inclusive. Sum = 55.", bn: "সঠিক! range(1, 10) তৈরি করে: ১,২,৩,৪,৫,৬,৭,৮,৯ — ১০-এর আগে থেমে যায়। range(1, 11) ১ থেকে ১০ পর্যন্ত সবগুলো ধরে। যোগফল = ৫৫।" } },
+      { text: 'for i in range(0, 10):', correct: false, feedback: { en: "range(0, 10) starts from 0 — that adds 0+1+...+9 = 45. Starting from 0 doesn't help when we need 1 through 10.", bn: "range(0, 10) ০ থেকে শুরু হয় — সেটা যোগ করে 0+1+...+9 = 45। ১ থেকে ১০ দরকার হলে ০ থেকে শুরু করা সাহায্য করবে না।" } },
+      { text: 'for i in range(1, 10, 2):', correct: false, feedback: { en: "The third parameter in range is step — range(1,10,2) gives odd numbers: 1,3,5,7,9. That's not what we want.", bn: "range-এর তৃতীয় প্যারামিটার হলো ধাপ — range(1,10,2) দেবে বিজোড় সংখ্যা: ১,৩,৫,৭,৯। এটা আমাদের দরকার নেই।" } }
+    ]
+  },
+  // ─── CASE 8: Loop — wrong accumulator init ───
+  {
+    id: 8,
+    label: { en: "CASE #08", bn: "কেস #০৮" },
+    title: { en: "The Poisoned Counter", bn: "দূষিত কাউন্টার" },
+    type: { en: "Loop Error", bn: "লুপ ত্রুটি" },
+    desc: {
+      en: "A multiplication table program shows numbers that are all exactly 10 too large. The loop structure looks right — but a starting value is contaminated.",
+      bn: "একটি গুণের ছক প্রোগ্রামের প্রতিটি সংখ্যা ঠিক ১০ বেশি দেখাচ্ছে। লুপের গঠন ঠিক আছে — কিন্তু একটি শুরুর মান দূষিত।"
+    },
+    code: [
+      { line: 1, text: 'guno = 5' },
+      { line: 2, text: 'jogfol = 10' },
+      { line: 3, text: 'for i in range(1, 6):' },
+      { line: 4, text: '    jogfol = jogfol + guno' },
+      { line: 5, text: '    print(guno, "×", i, "=", jogfol)' }
+    ],
+    bugLine: 2,
+    outputMode: "wrong",
+    output: { en: "5 × 1 = 15\n5 × 2 = 20\n5 × 3 = 25  (all 10 too large)", bn: "5 × 1 = 15\n5 × 2 = 20\n5 × 3 = 25  (সব ১০ বেশি)" },
+    errorOutput: false,
+    hint: { en: "An accumulator variable collects the running total. Before any multiplication starts, how much has been multiplied? What should the starting total be?", bn: "একটি অ্যাকুমুলেটর ভেরিয়েবল চলমান মোট সংগ্রহ করে। গুণ শুরু হওয়ার আগে কতটুকু গুণ হয়েছে? শুরুর মোট কত হওয়া উচিত?" },
+    fixType: "multiple",
+    options: [
+      { text: 'jogfol = 0', correct: true, feedback: { en: "Correct! The accumulator must start at 0 before counting begins. Starting at 10 adds a phantom 10 to every result. Accumulators for sums always start at 0; for products, they start at 1.", bn: "সঠিক! গণনা শুরুর আগে অ্যাকুমুলেটর অবশ্যই ০ থেকে শুরু হতে হবে। ১০ থেকে শুরু করলে প্রতিটি ফলাফলে একটি ভুয়া ১০ যোগ হয়। যোগের অ্যাকুমুলেটর সবসময় ০ থেকে শুরু; গুণের জন্য ১ থেকে।" } },
+      { text: 'jogfol = 1', correct: false, feedback: { en: "Starting at 1 still adds an extra 1 to everything — 5×1 would show 6. Only 0 is the neutral starting point for addition.", bn: "১ থেকে শুরু করলেও সবকিছুতে ১ বাড়তি যোগ হবে — 5×1 দেখাবে ৬। যোগের জন্য ০ই একমাত্র নিরপেক্ষ শুরুর বিন্দু।" } },
+      { text: 'jogfol = guno', correct: false, feedback: { en: "Starting at guno (5) means the first iteration gives 5+5=10, displaying '5 × 1 = 10' instead of 5. The neutral start for a sum accumulator is always 0.", bn: "guno (৫) থেকে শুরু করলে প্রথম ইটারেশনে ৫+৫=১০ হয়, দেখায় '5 × 1 = 10' এর বদলে ৫। যোগের অ্যাকুমুলেটরের নিরপেক্ষ শুরু সবসময় ০।" } }
+    ]
+  },
+  // ─── CASE 9: Multi-bug — variables + conditions ───
+  {
+    id: 9,
+    label: { en: "CASE #09", bn: "কেস #০৯" },
+    title: { en: "The Grade Forger", bn: "গ্রেড জালিয়াতকারী" },
+    type: { en: "Multi-Bug", bn: "একাধিক বাগ" },
+    desc: {
+      en: "A grade calculator has TWO bugs — one in the condition boundary, one in a variable. The program crashes before printing anything, so you'll need to trace the logic by hand (with nomor = 70) to catch both.",
+      bn: "একটি গ্রেড ক্যালকুলেটরে দুটি বাগ আছে — একটি শর্তের সীমায়, একটি ভেরিয়েবলে। প্রোগ্রামটি কিছু প্রিন্ট করার আগেই ক্র্যাশ করে, তাই দুটো বাগই ধরতে হলে কোডটি হাতে-কলমে (nomor = 70 দিয়ে) ট্রেস করতে হবে।"
+    },
+    code: [
+      { line: 1, text: 'nomor = 70' },
+      { line: 2, text: 'if nomor >= 80:' },
+      { line: 3, text: '    grade = "A+"' },
+      { line: 4, text: 'elif nomor > 70:' },
+      { line: 5, text: '    grade = "A"' },
+      { line: 6, text: 'else:' },
+      { line: 7, text: '    grade = "B"' },
+      { line: 8, text: 'print("গ্রেড:", gread)' }
+    ],
+    bugLine: 8,
+    outputMode: "error",
+    output: { en: "NameError: name 'gread' is not defined", bn: "NameError: name 'gread' is not defined" },
+    errorOutput: true,
+    hint: { en: "There are TWO bugs here. First: check the variable name used in print() against what was assigned earlier — that's why it crashes. Second: trace lines 2–7 by hand with nomor = 70 — for an 'A' grade, should 70 be included (>=) or excluded (>)? Since the program crashes on line 8, this second bug never shows up in the output — you can only catch it by reading the code carefully.", bn: "এখানে দুটি বাগ আছে। প্রথম: print()-এ ব্যবহৃত ভেরিয়েবলের নাম আগে যা অ্যাসাইন করা হয়েছে তার সাথে মেলাও — এজন্যই এটি ক্র্যাশ করে। দ্বিতীয়: nomor = 70 দিয়ে ২–৭ নং লাইন হাতে-কলমে ট্রেস করো — A গ্রেডের জন্য ৭০ অন্তর্ভুক্ত (>=) নাকি বাদ (>)? প্রোগ্রামটি ৮ নং লাইনে ক্র্যাশ করে বলে এই দ্বিতীয় বাগটি আউটপুটে কখনো দেখা যায় না — শুধু কোড মনোযোগ দিয়ে পড়লেই এটা ধরা যাবে।" },
+    fixType: "multiple",
+    options: [
+      { text: 'print("গ্রেড:", grade)', correct: true, feedback: { en: "Correct! Bug 1: 'gread' is a typo — the variable was named 'grade'. Python is case-sensitive and typo-sensitive: 'grade' ≠ 'gread'. Bug 2 (only visible by tracing the code, since the crash hides it): with nomor = 70, line 4's 'elif nomor > 70' is False, so it falls to grade = 'B' — but 70 should earn an 'A'. Line 4 should read >= 70 to include the boundary.", bn: "সঠিক! বাগ ১: 'gread' একটি টাইপো — ভেরিয়েবলটির নাম 'grade'। Python কেস এবং টাইপো-সেনসিটিভ: 'grade' ≠ 'gread'। বাগ ২ (শুধু কোড ট্রেস করলেই দেখা যায়, কারণ ক্র্যাশ এটা লুকিয়ে রাখে): nomor = 70 হলে, ৪ নং লাইনের 'elif nomor > 70' False হয়, তাই grade = 'B' হয়ে যায় — কিন্তু ৭০-এ 'A' পাওয়ার কথা। ৪ নং লাইনে >= 70 হওয়া উচিত যাতে সীমানা অন্তর্ভুক্ত হয়।" } },
+      { text: 'print("গ্রেড:", Grade)', correct: false, feedback: { en: "'Grade' with capital G is also not the variable name — it was 'grade' (all lowercase). Python distinguishes between 'grade', 'Grade', and 'GRADE'.", bn: "'Grade' বড় হাতের G দিয়ে শুরু — কিন্তু ভেরিয়েবলের নাম 'grade' (সম্পূর্ণ ছোট হাতে)। Python 'grade', 'Grade', এবং 'GRADE' আলাদাভাবে চেনে।" } },
+      { text: 'print(grade)', correct: false, feedback: { en: "This fixes the typo but removes the label 'গ্রেড:' — the output would just show the grade value with no context. The original intended a labeled output.", bn: "এটা টাইপো ঠিক করে কিন্তু 'গ্রেড:' লেবেলটি সরিয়ে দেয় — আউটপুটে শুধু গ্রেডের মান দেখাবে, প্রসঙ্গ ছাড়া। আসল উদ্দেশ্য ছিল লেবেলসহ আউটপুট।" } }
+    ]
+  },
+  // ─── CASE 10: Multi-bug — loop + variable + condition ───
+  {
+    id: 10,
+    label: { en: "CASE #10", bn: "কেস #১০" },
+    title: { en: "The Master Forgery", bn: "মাস্টার জালিয়াতি" },
+    type: { en: "Multi-Bug (Final)", bn: "একাধিক বাগ (চূড়ান্ত)" },
+    desc: {
+      en: "The final case. A program counts even numbers from 1 to 10 — but THREE bugs lurk inside. The accumulator starts wrong, the range is short, and the even-number check is inverted. Find them all.",
+      bn: "চূড়ান্ত কেস। একটি প্রোগ্রাম ১ থেকে ১০ পর্যন্ত জোড় সংখ্যা গণনা করার কথা — কিন্তু তিনটি বাগ লুকিয়ে আছে। অ্যাকুমুলেটর ভুলভাবে শুরু হচ্ছে, রেঞ্জ ছোট, এবং জোড় সংখ্যার পরীক্ষা উল্টো। সবগুলো খুঁজে বের করো।"
+    },
+    code: [
+      { line: 1, text: 'jor_gonona = 1' },
+      { line: 2, text: 'for i in range(1, 10):' },
+      { line: 3, text: '    if i % 2 != 0:' },
+      { line: 4, text: '        jor_gonona = jor_gonona + 1' },
+      { line: 5, text: 'print("জোড় সংখ্যার পরিমাণ:", jor_gonona)' }
+    ],
+    bugLine: 3,
+    outputMode: "wrong",
+    output: { en: "জোড় সংখ্যার পরিমাণ: 6  (expected: 5)", bn: "জোড় সংখ্যার পরিমাণ: 6  (প্রত্যাশিত: 5)" },
+    errorOutput: false,
+    hint: { en: "Three bugs: (1) A counter starts at 1 instead of 0. (2) range doesn't include 10. (3) i % 2 != 0 means ODD — you want EVEN numbers, so the check should be == 0.", bn: "তিনটি বাগ: (১) কাউন্টার ০ এর বদলে ১ থেকে শুরু হচ্ছে। (২) range ১০ ধরছে না। (৩) i % 2 != 0 মানে বিজোড় — জোড় সংখ্যার জন্য == 0 হওয়া উচিত।" },
+    fixType: "free",
+    freeFeedback: {
+      en: "Right! The counter must start at 0, range must include 10, and even numbers use == 0 with modulus. The corrected code should start with jor_gonona = 0, for i in range(1, 11):, and if i % 2 == 0:",
+      bn: "সঠিক! কাউন্টার ০ থেকে শুরু করতে হবে, range-এ ১০ অন্তর্ভুক্ত করতে হবে, এবং জোড় সংখ্যার জন্য মডুলাসে == 0 ব্যবহার করতে হবে। সংশোধিত কোড শুরু হবে jor_gonona = 0, for i in range(1, 11):, এবং if i % 2 == 0:."
+    },
+    options: [
+      { text: 'if i % 2 == 0:  # (also fix line 1→0 and range→11)', correct: true, feedback: { en: "Correct on all three bugs! Bug 1: jor_gonona starts at 1 (should be 0). Bug 2: range(1,10) misses 10 (needs range(1,11)). Bug 3: != 0 finds odd numbers — use == 0 for even. Even numbers 1–10: 2,4,6,8,10 = 5 total.", bn: "তিনটি বাগেই সঠিক! বাগ ১: jor_gonona ১ থেকে শুরু (০ হওয়া উচিত)। বাগ ২: range(1,10) ১০ বাদ দেয় (range(1,11) দরকার)। বাগ ৩: != 0 বিজোড় খোঁজে — জোড়ের জন্য == 0 ব্যবহার করো। ১–১০ জোড় সংখ্যা: ২,৪,৬,৮,১০ = মোট ৫টি।" } },
+      { text: 'if i % 2 == 0:', correct: false, feedback: { en: "The even check is now correct — but there are still two more bugs: the counter starts at 1 (should be 0) and range(1,10) misses 10. Fix all three to close the case!", bn: "জোড় চেক এখন ঠিক — কিন্তু আরও দুটি বাগ আছে: কাউন্টার ১ থেকে শুরু (০ হওয়া উচিত) এবং range(1,10) ১০ বাদ দেয়। কেস বন্ধ করতে তিনটিই ঠিক করো!" } },
+      { text: 'if i % 2 != 0:  # unchanged', correct: false, feedback: { en: "This is the original buggy line — != 0 finds odd numbers, not even ones. Modulus operator: i % 2 gives the remainder when dividing by 2. Even numbers have remainder 0.", bn: "এটা আসল বাগযুক্ত লাইন — != 0 বিজোড় সংখ্যা খোঁজে, জোড় নয়। মডুলাস অপারেটর: i % 2 দেয় ২ দিয়ে ভাগের ভাগশেষ। জোড় সংখ্যার ভাগশেষ ০ হয়।" } }
+    ]
+  }
+];
+
+/* ═══════════════════════════════════════════════
+   STATE — loaded from / saved to localStorage
+   ═══════════════════════════════════════════════ */
+let STATE = {
+  lang: 'en',
+  solved: {},       // { caseId: { attempts, hintsUsed, rank, xp, timestamp } }
+  streak: 0,
+  totalHints: 0,
+  xp: 0,
+  hardModeUnlocked: false,
+  unlockAllCases: false,
+  isRevision: false,
+  isHardMode: false
+};
+
+function saveState() {
+  localStorage.setItem('debug_detective_v2', JSON.stringify(STATE));
+}
+function loadState() {
+  const raw = localStorage.getItem('debug_detective_v2');
+  if (raw) {
+    try { Object.assign(STATE, JSON.parse(raw)); } catch(e) {}
+  }
+}
+
+function restartGame() {
+  const msg = STATE.lang === 'en'
+    ? 'This will erase ALL progress (every solved case, XP, and rank) for this browser. This cannot be undone. Continue?'
+    : 'এটি এই ব্রাউজারের সব অগ্রগতি (সমাধান করা কেস, XP এবং র‍্যাংক) মুছে ফেলবে। এটি ফিরিয়ে আনা যাবে না। আপনি কি নিশ্চিত?';
+  if (!confirm(msg)) return;
+  current = {
+    caseId: null,
+    step: 'run',
+    selectedLine: null,
+    selectedFix: null,
+    attempts: 0,
+    hintsUsed: 0,
+    codeRan: false,
+    timerInterval: null,
+    timerSeconds: 0
+  };
+  STATE = {
+    lang: STATE.lang,
+    solved: {},
+    streak: 0,
+    totalHints: 0,
+    xp: 0,
+    hardModeUnlocked: false,
+    unlockAllCases: false,
+    isRevision: false,
+    isHardMode: false
+  };
+  saveState();
+  updateStats();
+  renderCaseGrid();
+  renderArchive();
+  renderResults();
+  showScreen('screen-menu');
+}
+
+/* ═══════════════════════════════
+   CURRENT CASE SESSION STATE
+   ═══════════════════════════════ */
+let current = {
+  caseId: null,
+  step: 'run',   // 'run' | 'suspect' | 'fix'
+  selectedLine: null,
+  selectedFix: null,
+  attempts: 0,
+  hintsUsed: 0,
+  codeRan: false,
+  timerInterval: null,
+  timerSeconds: 0,
+  xpGained: 0
+};
+
+/* ═══════════════════════════════
+   LANGUAGE HELPERS
+   ═══════════════════════════════ */
+function t(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  return obj[STATE.lang] || obj.en || '';
+}
+function applyLang() {
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + STATE.lang) || el.getAttribute('data-en');
+  });
+  document.querySelectorAll('[data-bn]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + STATE.lang) || el.getAttribute('data-en');
+  });
+  document.getElementById('lang-btn').textContent = STATE.lang === 'en' ? 'বাং / EN' : 'EN / বাং';
+  // If a case is open, re-render it
+  if (current.caseId !== null) {
+    const c = CASES.find(x => x.id === current.caseId);
+    if (c) renderCaseHeader(c);
+  }
+  renderCaseGrid();
+  renderArchive();
+  renderResults();
+  updateHeaderRank();
+}
+function toggleLang() {
+  STATE.lang = STATE.lang === 'en' ? 'bn' : 'en';
+  saveState();
+  applyLang();
+}
+
+/* ═══════════════════════════════
+   SCREEN ROUTING
+   ═══════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const backBtn = document.getElementById('back-btn');
+  if (id === 'screen-menu') {
+    backBtn.style.display = 'none';
+    stopTimer();
+    updateLockToggleButton();
+  } else {
+    backBtn.style.display = '';
+  }
+  if (id === 'screen-menu') { renderCaseGrid(); drawStrings(); }
+  if (id === 'screen-results') renderResults();
+  if (id === 'screen-archive') renderArchive();
+  window.scrollTo(0,0);
+}
+function goBack() {
+  showScreen('screen-menu');
+  current.caseId = null;
+}
+
+function toggleCaseLocking() {
+  STATE.unlockAllCases = !STATE.unlockAllCases;
+  saveState();
+  updateLockToggleButton();
+  renderCaseGrid();
+  drawStrings();
+}
+
+function updateLockToggleButton() {
+  const btn = document.getElementById('lock-toggle-btn');
+  if (!btn) return;
+  if (STATE.unlockAllCases) {
+    btn.innerHTML = '🔒 <span data-en="Lock all cases" data-bn="সব কেস লক করো">Lock all cases</span>';
+  } else {
+    btn.innerHTML = '🔓 <span data-en="Unlock all cases" data-bn="সব কেস আনলক করো">Unlock all cases</span>';
+  }
+  applyLang();
+}
+
+/* ═══════════════════════════════
+   RANK SYSTEM
+   ═══════════════════════════════ */
+function calcCaseRank(attempts, hintsUsed) {
+  if (attempts === 1 && hintsUsed === 0) return 'master';
+  if (attempts <= 2 && hintsUsed <= 1) return 'skilled';
+  return 'rookie';
+}
+function rankLabel(r) {
+  const labels = {
+    master:  { en: 'Master Detective', bn: 'মাস্টার গোয়েন্দা' },
+    skilled: { en: 'Skilled Detective', bn: 'দক্ষ গোয়েন্দা' },
+    rookie:  { en: 'Rookie Detective', bn: 'নতুন গোয়েন্দা' }
+  };
+  return t(labels[r] || labels.rookie);
+}
+function overallRank() {
+  const solved = Object.values(STATE.solved).filter(s => s.rank);
+  if (!solved.length) return 'rookie';
+  const masters = solved.filter(s => s.rank === 'master').length;
+  const skilled = solved.filter(s => s.rank === 'skilled').length;
+  if (masters / solved.length >= 0.6) return 'master';
+  if ((masters + skilled) / solved.length >= 0.5) return 'skilled';
+  return 'rookie';
+}
+function updateHeaderRank() {
+  const r = overallRank();
+  document.getElementById('header-rank').textContent = rankLabel(r);
+  document.getElementById('stat-rank').textContent = rankLabel(r);
+}
+
+/* ═══════════════════════════════
+   STATS BAR
+   ═══════════════════════════════ */
+function updateStats() {
+  const solvedCount = Object.keys(STATE.solved).length;
+  document.getElementById('stat-solved').textContent = solvedCount;
+  document.getElementById('stat-streak').textContent = STATE.streak;
+  document.getElementById('stat-hints').textContent = STATE.totalHints;
+  document.getElementById('xp-badge').textContent = `XP ${STATE.xp}`;
+  updateHeaderRank();
+}
+
+/* ═══════════════════════════════
+   CORKBOARD — CASE GRID
+   ═══════════════════════════════ */
+const TILTS = [-2.5, 1.8, -1.2, 2.1, -1.7, 1.4, -2.2, 1.6, -1.9, 2.3, -1.1];
+
+function renderCaseGrid() {
+  const grid = document.getElementById('cases-grid');
+  grid.innerHTML = '';
+  CASES.forEach((c, idx) => {
+    const isSolved = !!STATE.solved[c.id];
+    const isLocked = !STATE.unlockAllCases && c.id !== 0 && !STATE.solved[c.id - 1];
+    const tilt = TILTS[idx % TILTS.length];
+    const div = document.createElement('div');
+    div.className = 'case-pin' + (isSolved ? ' solved' : '') + (isLocked ? ' locked' : '') + (c.isTutorial ? ' tutorial' : '');
+    div.style.setProperty('--tilt', tilt + 'deg');
+    if (!isLocked) div.onclick = () => openCase(c.id);
+    div.innerHTML = `
+      <div class="pin-dot"></div>
+      <div class="case-num typewriter">${t(c.label)}</div>
+      <div class="case-title typewriter">${t(c.title)}</div>
+      <div class="case-type-tag mono">${t(c.type)}</div>
+      <div class="case-status-icon" aria-label="${isSolved ? 'solved' : isLocked ? 'locked' : c.isTutorial ? 'tutorial' : 'open'}">
+        ${isSolved ? '✓' : isLocked ? '🔒' : c.isTutorial ? '▶' : '📄'}
+      </div>
+    `;
+    div.id = 'case-pin-' + c.id;
+    grid.appendChild(div);
+  });
+}
+
+/* Red string SVG between solved cases */
+function drawStrings() {
+  const canvas = document.getElementById('string-canvas');
+  const board = document.getElementById('corkboard');
+  canvas.innerHTML = '';
+  const solvedIds = Object.keys(STATE.solved).map(Number).sort((a,b)=>a-b);
+  if (solvedIds.length < 2) return;
+  const boardRect = board.getBoundingClientRect();
+  for (let i = 0; i < solvedIds.length - 1; i++) {
+    const a = document.getElementById('case-pin-' + solvedIds[i]);
+    const b = document.getElementById('case-pin-' + solvedIds[i+1]);
+    if (!a || !b) continue;
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    const x1 = ra.left - boardRect.left + ra.width/2;
+    const y1 = ra.top - boardRect.top + ra.height/2;
+    const x2 = rb.left - boardRect.left + rb.width/2;
+    const y2 = rb.top - boardRect.top + rb.height/2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#c82020');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-opacity', '0.6');
+    line.setAttribute('stroke-dasharray', '4 3');
+    canvas.appendChild(line);
+  }
+}
+
+/* ═══════════════════════════════
+   OPEN A CASE
+   ═══════════════════════════════ */
+function openCase(id, revisionMode = false) {
+  const c = CASES.find(x => x.id === id);
+  if (!c) return;
+  const isLocked = !STATE.unlockAllCases && c.id !== 0 && !STATE.solved[c.id - 1];
+  if (isLocked && !revisionMode) return;
+  current = { caseId: id, step: 'run', selectedLine: null, selectedFix: null,
+              attempts: 0, hintsUsed: 0, codeRan: false, timerInterval: null, timerSeconds: 0, xpGained: 0 };
+  STATE.isRevision = revisionMode;
+
+  // Show case progress
+  const progress = ((id + 1) / CASES.length) * 100;
+  document.getElementById('case-progress').style.width = progress + '%';
+
+  showScreen('screen-case');
+  document.getElementById('back-btn').style.display = '';
+  renderCaseHeader(c);
+  renderCodeLines(c);
+  resetCaseUI();
+
+  // Hard mode timer
+  if (STATE.isHardMode) startTimer();
+}
+
+function renderCaseHeader(c) {
+  document.getElementById('case-badge').textContent = t(c.label);
+  document.getElementById('case-num-stamp').textContent = t(c.label);
+  document.getElementById('case-desc').innerHTML = t(c.desc);
+  renderAttemptDots();
+}
+
+function renderAttemptDots() {
+  const row = document.getElementById('attempt-dots');
+  const maxAttempts = 5;
+  let html = '';
+  for (let i = 0; i < maxAttempts; i++) {
+    let cls = 'attempt-dot';
+    if (i < current.attempts) cls += ' used';
+    else if (i === current.attempts) cls += ' current';
+    html += `<div class="${cls}" aria-hidden="true"></div>`;
+  }
+  const label = STATE.lang === 'en' ? 'Attempts' : 'চেষ্টা';
+  row.innerHTML = `<span style="font-size:.75rem;color:var(--text-light);font-family:Share Tech Mono,monospace">${label}:</span>` + html;
+}
+
+function renderCodeLines(c) {
+  const area = document.getElementById('code-lines');
+  area.innerHTML = '';
+  c.code.forEach(cl => {
+    const div = document.createElement('div');
+    div.className = 'code-line';
+    div.dataset.line = cl.line;
+    div.innerHTML = `
+      <div class="line-num mono">${cl.line}</div>
+      <div class="line-content mono">${escHtml(cl.text)}</div>
+      <div class="line-select-indicator">●</div>
+    `;
+    div.onclick = () => selectLine(cl.line, div);
+    area.appendChild(div);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function resetCaseUI() {
+  ['step-suspect','step-fix'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('step-run').style.display = '';
+  document.getElementById('output-area').classList.remove('visible','error-output');
+
+  // Clear any Hard Mode "time's up" lockout from a previous attempt
+  document.getElementById('timeup-banner').style.display = 'none';
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('hint-btn').disabled = false;
+  const freeInput = document.getElementById('free-input');
+  if (freeInput) freeInput.disabled = false;
+
+  const fixFb = document.getElementById('fix-feedback');
+  fixFb.className = 'feedback-panel';
+  fixFb.style.display = 'none';
+  fixFb.innerHTML = '';
+
+  const suspFb = document.getElementById('suspect-feedback');
+  suspFb.className = 'feedback-panel';
+  suspFb.style.display = 'none';
+  suspFb.innerHTML = '';
+
+  const hintPanel = document.getElementById('hint-panel');
+  hintPanel.className = 'feedback-panel hint-fb';
+  hintPanel.style.display = 'none';
+  hintPanel.innerHTML = '';
+
+  document.getElementById('confirm-suspect-btn').disabled = true;
+  document.querySelectorAll('.code-line').forEach(l => {
+    l.classList.remove('selected-line','correct-line','wrong-line','highlighted-line','hint-glow-line');
+  });
+}
+
+/* ═══════════════════════════════
+   STEP 1: RUN CODE
+   ═══════════════════════════════ */
+function runCode() {
+  const c = CASES.find(x => x.id === current.caseId);
+  const area = document.getElementById('output-area');
+  const text = document.getElementById('output-text');
+  const label = document.getElementById('output-label');
+  area.classList.add('visible');
+  current.codeRan = true;
+
+  if (c.errorOutput) {
+    area.classList.add('error-output');
+    label.textContent = STATE.lang === 'en' ? '⚠ ERROR' : '⚠ ত্রুটি';
+    text.textContent = t(c.output);
+  } else {
+    area.classList.remove('error-output');
+    label.textContent = STATE.lang === 'en' ? '▶ OUTPUT' : '▶ আউটপুট';
+    text.textContent = t(c.output);
+  }
+
+  // Move to suspect step
+  setTimeout(() => {
+    document.getElementById('step-suspect').style.display = '';
+    applyLang();
+    document.getElementById('step-suspect').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 400);
+}
+
+/* ═══════════════════════════════
+   STEP 2: SELECT SUSPECT LINE
+   ═══════════════════════════════ */
+function selectLine(lineNum, el) {
+  if (current.step === 'fix') return;
+  document.querySelectorAll('.code-line').forEach(l => l.classList.remove('selected-line'));
+  el.classList.add('selected-line');
+  current.selectedLine = lineNum;
+  document.getElementById('confirm-suspect-btn').disabled = false;
+}
+
+function confirmSuspect() {
+  const c = CASES.find(x => x.id === current.caseId);
+  const fb = document.getElementById('suspect-feedback');
+
+  if (current.selectedLine === c.bugLine) {
+    // Correct suspect
+    showFeedbackPanel(fb, 'feedback-panel correct-fb', `<div class="fb-header"><span class="fb-icon">✓</span><span class="fb-title typewriter">${STATE.lang === 'en' ? 'CORRECT SUSPECT' : 'সঠিক লাইন'}</span></div>
+    <div class="fb-body">${STATE.lang === 'en' ? 'Good eye! That line is the culprit. Now fix it.' : 'চমৎকার! এই লাইনেই বাগ আছে। এখন এটা ঠিক করো।'}</div>`);
+    playSound('correct');
+    document.querySelectorAll('.code-line').forEach(l => l.classList.remove('selected-line'));
+    document.querySelector(`.code-line[data-line="${c.bugLine}"]`)?.classList.add('correct-line');
+    current.step = 'fix';
+    setTimeout(() => {
+      document.getElementById('step-fix').style.display = '';
+      renderFixOptions(c);
+      document.getElementById('step-fix').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 500);
+  } else {
+    // Wrong suspect
+    const nudge = STATE.lang === 'en'
+      ? "That line looks clean. Look again — consider what the error message (or wrong output) is telling you."
+      : "এই লাইনটা ঠিক আছে মনে হচ্ছে। আবার দেখো — ত্রুটির বার্তা (বা ভুল আউটপুট) তোমাকে কী বলছে?";
+    showFeedbackPanel(fb, 'feedback-panel wrong-fb', `<div class="fb-header"><span class="fb-icon">✗</span><span class="fb-title typewriter">${STATE.lang === 'en' ? 'WRONG SUSPECT' : 'ভুল লাইন'}</span></div>
+    <div class="fb-body">${nudge}</div>`);
+    playSound('wrong');
+    document.querySelector(`.code-line[data-line="${current.selectedLine}"]`)?.classList.add('wrong-line');
+    setTimeout(() => {
+      document.querySelector(`.code-line[data-line="${current.selectedLine}"]`)?.classList.remove('wrong-line');
+      document.querySelectorAll('.code-line').forEach(l => l.classList.remove('selected-line'));
+      current.selectedLine = null;
+      document.getElementById('confirm-suspect-btn').disabled = true;
+    }, 600);
+  }
+}
+
+/* ═══════════════════════════════
+   STEP 3: FIX OPTIONS
+   ═══════════════════════════════ */
+function renderFixOptions(c) {
+  const container = document.getElementById('fix-options');
+  const freeArea = document.getElementById('free-input-area');
+  const textarea = document.getElementById('free-input');
+  container.innerHTML = '';
+  current.selectedFix = null;
+  textarea.disabled = false;
+  textarea.classList.remove('invalid-input');
+
+  if (c.fixType === 'free') {
+    freeArea.style.display = '';
+    textarea.value = '';
+    textarea.placeholder = t({ en: 'Type the corrected code line here...', bn: 'সঠিক কোড লাইনের সংশোধিত অংশ এখানে টাইপ করো...' });
+    container.style.display = 'none';
+    return;
+  }
+
+  freeArea.style.display = 'none';
+  container.style.display = '';
+  const keys = ['A', 'B', 'C', 'D'];
+  c.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'fix-option';
+    div.dataset.idx = i;
+    div.onclick = () => selectFix(i);
+    div.innerHTML = `
+      <span class="fix-option-key mono">${keys[i]}</span>
+      <span class="fix-option-text mono">${escHtml(t(opt.text) || opt.text)}</span>
+      <span class="fix-option-icon" aria-hidden="true"></span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function selectFix(idx) {
+  if (document.getElementById('fix-feedback').classList.contains('visible') &&
+      document.getElementById('fix-feedback').classList.contains('correct-fb')) return;
+  document.querySelectorAll('.fix-option').forEach(o => o.classList.remove('selected'));
+  document.querySelector(`.fix-option[data-idx="${idx}"]`)?.classList.add('selected');
+  current.selectedFix = idx;
+}
+
+function submitFix() {
+  const c = CASES.find(x => x.id === current.caseId);
+  const fb = document.getElementById('fix-feedback');
+  current.attempts++;
+  renderAttemptDots();
+
+  let isCorrect = false;
+  let opt = null;
+  let feedbackText = '';
+  const textarea = document.getElementById('free-input');
+
+  if (c.fixType === 'free') {
+    const userText = textarea.value.trim();
+    if (!userText) return;
+    isCorrect = validateFreeFix(c, userText);
+    feedbackText = t(c.freeFeedback);
+    if (isCorrect) {
+      textarea.disabled = true;
+      textarea.classList.remove('invalid-input');
+    } else {
+      textarea.classList.add('invalid-input');
+    }
+  } else {
+    if (current.selectedFix === null) return;
+    opt = c.options[current.selectedFix];
+    isCorrect = !!opt.correct;
+    feedbackText = t(opt.feedback);
+  }
+
+  if (isCorrect) {
+    if (opt) {
+      document.querySelector(`.fix-option[data-idx="${current.selectedFix}"]`)?.classList.add('correct');
+      document.querySelector(`.fix-option[data-idx="${current.selectedFix}"] .fix-option-icon`).textContent = '✓';
+    }
+    showFeedbackPanel(fb, 'feedback-panel correct-fb', `<div class="fb-header"><span class="fb-icon">✓</span><span class="fb-title typewriter">${STATE.lang === 'en' ? 'BUG FIXED!' : 'বাগ ঠিক হয়েছে!'}</span></div>
+    <div class="fb-body">${feedbackText}</div>`);
+    document.getElementById('submit-fix-btn').disabled = true;
+    playSound('solved');
+
+    if (!c.isTutorial && !STATE.isRevision) {
+      awardXpForSolve(current.attempts, current.hintsUsed);
+      const rank = calcCaseRank(current.attempts, current.hintsUsed);
+      STATE.solved[c.id] = { attempts: current.attempts, hintsUsed: current.hintsUsed, rank, xp: current.xpGained || 0, timestamp: Date.now() };
+      STATE.streak++;
+      STATE.totalHints += current.hintsUsed;
+      saveState();
+      updateStats();
+      stopTimer();
+      setTimeout(() => showStamp(c, rank), 700);
+    } else if (c.isTutorial) {
+      awardXpForSolve(current.attempts, current.hintsUsed);
+      STATE.solved[c.id] = { attempts: current.attempts, hintsUsed: current.hintsUsed, rank: 'rookie', xp: current.xpGained || 0, timestamp: Date.now() };
+      saveState();
+      updateStats();
+      setTimeout(() => {
+        showStamp(c, null);
+      }, 700);
+    }
+  } else {
+    if (opt) {
+      document.querySelector(`.fix-option[data-idx="${current.selectedFix}"]`)?.classList.add('wrong');
+      document.querySelector(`.fix-option[data-idx="${current.selectedFix}"] .fix-option-icon`).textContent = '✗';
+      current.selectedFix = null;
+    }
+    showFeedbackPanel(fb, 'feedback-panel wrong-fb', `<div class="fb-header"><span class="fb-icon">✗</span><span class="fb-title typewriter">${STATE.lang === 'en' ? 'NOT QUITE' : 'সঠিক হয়নি'}</span></div>
+    <div class="fb-body">${feedbackText}</div>`);
+    playSound('wrong');
+    if (current.attempts >= 3) {
+      showAdaptiveHint(c);
+    }
+  }
+}
+
+function showAdaptiveHint(c) {
+  const existingHint = document.getElementById('hint-panel');
+  if (existingHint.classList.contains('visible')) return;
+  const msg = STATE.lang === 'en'
+    ? `Looks like this one's tricky. Here's a stronger clue: ${t(c.hint)} — try re-reading the buggy line carefully now.`
+    : `মনে হচ্ছে এটা একটু কঠিন। এখানে আরেকটু বড় সংকেত: ${t(c.hint)} — এখন বাগযুক্ত লাইনটি আবার মনোযোগ দিয়ে পড়ো।`;
+  showFeedbackPanel(existingHint, 'feedback-panel hint-fb', `<div class="fb-header"><span class="fb-icon">💡</span><span class="fb-title typewriter">${STATE.lang === 'en' ? "EXTRA CLUE" : "বিশেষ সংকেত"}</span></div><div class="fb-body">${msg}</div>`);
+}
+
+/* ═══════════════════════════════
+   HINT SYSTEM
+   ═══════════════════════════════ */
+function useHint() {
+  const c = CASES.find(x => x.id === current.caseId);
+  current.hintsUsed++;
+  document.body.classList.add('hint-mode');
+  setTimeout(() => document.body.classList.remove('hint-mode'), 2000);
+  showFeedbackPanel(document.getElementById('hint-panel'), 'feedback-panel hint-fb', `<div class="fb-header"><span class="fb-icon">🔍</span><span class="fb-title typewriter">${t({en:"DETECTIVE'S CLUE",bn:"গোয়েন্দার ইঙ্গিত"})}</span></div>
+  <div class="fb-body">${t(c.hint)}<br><small style="opacity:.7">${STATE.lang === 'en' ? '(Hint used — affects final rank for this case)' : '(ইঙ্গিত ব্যবহার হয়েছে — এই কেসের চূড়ান্ত র‍্যাংকে প্রভাব পড়বে)'}</small></div>`);
+  if (current.step === 'run' || current.step === 'suspect') {
+    const bugLineEl = document.querySelector(`.code-line[data-line="${c.bugLine}"]`);
+    if (bugLineEl) {
+      bugLineEl.classList.add('hint-glow-line');
+      setTimeout(() => bugLineEl.classList.remove('hint-glow-line'), 3000);
+    }
+  }
+  playSound('hint');
+  document.getElementById('hint-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ═══════════════════════════════
+   STAMP OVERLAY
+   ═══════════════════════════════ */
+function showStamp(c, rank) {
+  const overlay = document.getElementById('stamp-overlay');
+  burstConfetti();
+  const stampText = document.getElementById('stamp-text');
+  const stampRank = document.getElementById('stamp-rank');
+  const stampDetail = document.getElementById('stamp-detail');
+  const nextBtn = document.getElementById('stamp-next-btn');
+
+  if (c.isTutorial) {
+    stampText.textContent = STATE.lang === 'en' ? 'TRAINING COMPLETE' : 'প্রশিক্ষণ সম্পন্ন';
+    stampText.style.fontSize = '1.8rem';
+    stampText.style.color = 'var(--hint-teal)';
+    stampText.style.borderColor = 'var(--hint-teal)';
+    stampRank.textContent = STATE.lang === 'en' ? 'You\'re ready for real cases!' : 'এখন আসল কেসের জন্য প্রস্তুত!';
+    stampDetail.textContent = STATE.lang === 'en' ? 'No score for training — now go solve the real thing.' : 'প্রশিক্ষণে স্কোর নেই — এখন আসল কেস সমাধান করো।';
+  } else {
+    stampText.textContent = STATE.lang === 'en' ? 'CASE CLOSED' : 'কেস বন্ধ';
+    stampText.style.fontSize = '2.4rem';
+    stampText.style.color = 'var(--stamp-red)';
+    stampText.style.borderColor = 'var(--stamp-red)';
+    stampRank.textContent = rankLabel(rank);
+    stampDetail.innerHTML = `
+      ${STATE.lang === 'en' ? 'Attempts' : 'চেষ্টা'}: <strong>${current.attempts}</strong> &nbsp;·&nbsp;
+      ${STATE.lang === 'en' ? 'Hints' : 'ইঙ্গিত'}: <strong>${current.hintsUsed}</strong><br>
+      ${STATE.lang === 'en' ? 'Overall rank' : 'সামগ্রিক পদমর্যাদা'}: <strong>${rankLabel(overallRank())}</strong>
+    `;
+  }
+
+  // Next case button
+  const nextIdx = CASES.findIndex(x => x.id === c.id) + 1;
+  if (nextIdx < CASES.length) {
+    nextBtn.style.display = '';
+    nextBtn.querySelector('span').textContent = STATE.lang === 'en' ? 'Next Case →' : 'পরের কেস →';
+  } else {
+    nextBtn.style.display = 'none';
+    // Unlock hard mode if all solved
+    if (Object.keys(STATE.solved).length >= CASES.length - 1) {
+      STATE.hardModeUnlocked = true;
+      saveState();
+    }
+  }
+
+  overlay.classList.add('visible');
+  // Re-trigger stamp animation
+  const stamp = document.querySelector('.stamp-mark');
+  stamp.style.animation = 'none';
+  void stamp.offsetWidth;
+  stamp.style.animation = '';
+}
+function closeStamp() {
+  document.getElementById('stamp-overlay').classList.remove('visible');
+}
+function nextCase() {
+  closeStamp();
+  const c = CASES.find(x => x.id === current.caseId);
+  if (!c) return showScreen('screen-menu');
+  const currentIdx = CASES.findIndex(x => x.id === c.id);
+  for (let i = currentIdx + 1; i < CASES.length; i++) {
+    const next = CASES[i];
+    const isLocked = !STATE.unlockAllCases && next.id !== 0 && !STATE.solved[next.id - 1];
+    if (!isLocked) {
+      openCase(next.id);
+      return;
+    }
+  }
+  showScreen('screen-menu');
+}
+
+/* ═══════════════════════════════
+   ARCHIVE
+   ═══════════════════════════════ */
+function renderArchive() {
+  const list = document.getElementById('archive-list');
+  const solved = Object.keys(STATE.solved).map(Number).sort((a,b)=>a-b);
+  if (!solved.length) {
+    list.innerHTML = `<p style="color:var(--text-light);font-style:italic;">${STATE.lang === 'en' ? 'No cases solved yet. Go close some!' : 'এখনো কোনো কেস সমাধান হয়নি। এগিয়ে যাও!'}</p>`;
+    return;
+  }
+  list.innerHTML = solved.map(id => {
+    const c = CASES.find(x => x.id === id);
+    const s = STATE.solved[id];
+    if (!c || !s) return '';
+    return `<div class="archive-item" onclick="openCase(${id}, true); showScreen('screen-case')">
+      <div class="archive-stamp typewriter">${STATE.lang === 'en' ? 'CLOSED' : 'বন্ধ'}</div>
+      <div class="archive-info">
+        <div class="archive-case-title typewriter">${t(c.label)}: ${t(c.title)}</div>
+        <div class="archive-case-rank mono">${rankLabel(s.rank)} · ${STATE.lang === 'en' ? 'Attempts' : 'চেষ্টা'}: ${s.attempts} · ${STATE.lang === 'en' ? 'Hints' : 'ইঙ্গিত'}: ${s.hintsUsed}</div>
+      </div>
+      <span style="color:var(--amber-dim);font-size:1.1rem">→</span>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════
+   RESULTS / TEACHER SUMMARY
+   ═══════════════════════════════ */
+function renderResults() {
+  const tbody = document.getElementById('results-tbody');
+  const overall = document.getElementById('results-overall');
+  const hardPanel = document.getElementById('hard-mode-panel');
+
+  const solvedCount = Object.keys(STATE.solved).length;
+  const totalHints = Object.values(STATE.solved).reduce((s,v) => s + (v.hintsUsed||0), 0);
+  const totalAttempts = Object.values(STATE.solved).reduce((s,v) => s + (v.attempts||0), 0);
+
+  overall.innerHTML = `
+    <div class="overall-stat"><span class="overall-num typewriter">${solvedCount}/11</span><span class="overall-label">${STATE.lang === 'en' ? 'Cases Solved' : 'কেস সমাধান'}</span></div>
+    <div class="overall-stat"><span class="overall-num typewriter">${STATE.streak}</span><span class="overall-label">${STATE.lang === 'en' ? 'Current Streak' : 'বর্তমান ধারা'}</span></div>
+    <div class="overall-stat"><span class="overall-num typewriter">${totalHints}</span><span class="overall-label">${STATE.lang === 'en' ? 'Total Hints' : 'মোট ইঙ্গিত'}</span></div>
+    <div class="overall-stat"><span class="overall-num typewriter">${rankLabel(overallRank())}</span><span class="overall-label">${STATE.lang === 'en' ? 'Overall Rank' : 'সামগ্রিক র‍্যাংক'}</span></div>
+  `;
+
+  tbody.innerHTML = CASES.map(c => {
+    const s = STATE.solved[c.id];
+    const status = s ? (STATE.lang === 'en' ? '✓ Solved' : '✓ সমাধান') : (STATE.lang === 'en' ? '— Open' : '— খোলা');
+    const rankCls = s ? (s.rank === 'master' ? 'rank-cell master' : s.rank === 'skilled' ? 'rank-cell skilled' : 'rank-cell') : '';
+    return `<tr>
+      <td class="mono">${t(c.label)}</td>
+      <td>${t(c.title)}</td>
+      <td>${status}</td>
+      <td class="mono">${s ? s.attempts : '—'}</td>
+      <td class="mono">${s ? s.hintsUsed : '—'}</td>
+      <td class="${rankCls}">${s ? rankLabel(s.rank) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  if (STATE.hardModeUnlocked || solvedCount >= 11) {
+    hardPanel.classList.add('visible');
+  }
+}
+
+/* ═══════════════════════════════
+   HARD MODE
+   ═══════════════════════════════ */
+function startHardMode() {
+  STATE.isHardMode = true;
+  saveState();
+  showScreen('screen-menu');
+  // Unlock all for hard mode replay
+  renderCaseGrid();
+  alert(STATE.lang === 'en' ? 'Hard Mode: each case has 90 seconds. Timer starts when the case opens. Good luck, Detective!' : 'হার্ড মোড: প্রতিটি কেসে ৯০ সেকেন্ড। কেস খোলার সাথে সাথে টাইমার শুরু। শুভকামনা, গোয়েন্দা!');
+}
+
+function startTimer() {
+  const display = document.getElementById('timer-display');
+  display.classList.add('visible');
+  current.timerSeconds = 90;
+  updateTimerDisplay();
+  current.timerInterval = setInterval(() => {
+    current.timerSeconds--;
+    updateTimerDisplay();
+    if (current.timerSeconds <= 15) display.classList.add('urgent');
+    if (current.timerSeconds <= 0) {
+      stopTimer();
+      display.textContent = STATE.lang === 'en' ? 'TIME!' : 'সময় শেষ!';
+      handleTimeUp();
+    }
+  }, 1000);
+}
+
+function handleTimeUp() {
+  // Disable all remaining interactions for this case
+  const runBtn = document.getElementById('run-btn');
+  const hintBtn = document.getElementById('hint-btn');
+  const confirmBtn = document.getElementById('confirm-suspect-btn');
+  const submitBtn = document.getElementById('submit-fix-btn');
+  const textarea = document.getElementById('free-input');
+  if (runBtn) runBtn.disabled = true;
+  if (hintBtn) hintBtn.disabled = true;
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (submitBtn) submitBtn.disabled = true;
+  if (textarea) textarea.disabled = true;
+  document.querySelectorAll('.code-line').forEach(l => { l.onclick = null; l.style.cursor = 'default'; });
+  document.querySelectorAll('.fix-option').forEach(o => { o.onclick = null; o.style.cursor = 'default'; o.style.opacity = '.5'; });
+  const banner = document.getElementById('timeup-banner');
+  banner.style.display = 'block';
+  banner.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + STATE.lang) || el.getAttribute('data-en');
+  });
+  banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function stopTimer() {
+  if (current.timerInterval) {
+    clearInterval(current.timerInterval);
+    current.timerInterval = null;
+  }
+  const display = document.getElementById('timer-display');
+  display.classList.remove('visible','urgent');
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(current.timerSeconds / 60);
+  const s = current.timerSeconds % 60;
+  document.getElementById('timer-display').textContent =
+    String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function validateFreeFix(c, userText) {
+  if (c.id === 10) {
+    const normalized = userText.trim().replace(/\s+/g, ' ');
+    const patterns = [
+      /jor_gonona = 0/i,
+      /for i in range\(1, 11\):/i,
+      /if i % 2 == 0:/i
+    ];
+    return patterns.every(p => p.test(normalized));
+  }
+  return false;
+}
+
+function showFeedbackPanel(panel, classes, html) {
+  panel.className = classes + ' visible';
+  panel.style.display = 'block';
+  panel.innerHTML = html;
+}
+
+function awardXpForSolve(attempts, hintsUsed) {
+  let xp = 20; // base XP
+  
+  // Perfect attempt bonus (1st try, no hints)
+  if (attempts === 1 && hintsUsed === 0) xp += 30;
+  // Good attempt (2-3 tries, minimal hints)
+  else if (attempts === 1 && hintsUsed === 1) xp += 15;
+  else if (attempts === 2 && hintsUsed === 0) xp += 20;
+  else if (attempts === 2 && hintsUsed === 1) xp += 10;
+  else if (attempts <= 3 && hintsUsed <= 2) xp += 5;
+  
+  // Penalty for excessive hints
+  if (hintsUsed > 2) xp -= (hintsUsed - 2) * 2;
+  // Penalty for excessive attempts
+  if (attempts > 4) xp -= (attempts - 4) * 1;
+  
+  // Hard mode bonus (2x multiplier)
+  if (STATE.isHardMode) xp *= 2;
+  
+  xp = Math.max(xp, 5); // min 5 XP
+  STATE.xp += xp;
+  current.xpGained = xp;
+  updateStats();
+  const badge = document.getElementById('xp-badge');
+  const gain = document.createElement('span');
+  gain.className = 'xp-gain';
+  gain.textContent = `+${xp}`;
+  badge.appendChild(gain);
+}
+
+function playSound(type) {
+  if (!window.AudioContext && !window.webkitAudioContext) return;
+  if (!window.__debugDetectiveAudio) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    window.__debugDetectiveAudio = new AudioContext();
+  }
+  const ctx = window.__debugDetectiveAudio;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+  const sounds = {
+    correct: { freq: 440, type: 'triangle', duration: 0.18 },
+    wrong: { freq: 220, type: 'square', duration: 0.2 },
+    hint: { freq: 330, type: 'sine', duration: 0.16 },
+    solved: { freq: 520, type: 'sine', duration: 0.28 }
+  };
+  const sound = sounds[type] || sounds.hint;
+  osc.type = sound.type;
+  osc.frequency.setValueAtTime(sound.freq, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + sound.duration);
+  osc.start(now);
+  osc.stop(now + sound.duration);
+}
+
+function burstConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const colors = ['#f7d56f','#ff5f5f','#7fd5ff','#b865ff','#c82020'];
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.2,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 5 + 2,
+      size: Math.random() * 6 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * Math.PI,
+      tiltSpeed: Math.random() * 0.1 + 0.05,
+      opacity: 1
+    });
+  }
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.tilt += p.tiltSpeed;
+      p.opacity -= 0.005;
+      const x = p.x + Math.sin(p.tilt * 2) * 8;
+      const y = p.y;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(p.opacity, 0);
+      ctx.fillRect(x, y, p.size, p.size * 0.6);
+    });
+    ctx.globalAlpha = 1;
+    frame++;
+    if (frame < 110) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+/* ═══════════════════════════════
+   INIT
+   ═══════════════════════════════ */
+function init() {
+  loadState();
+  renderCaseGrid();
+  updateStats();
+  applyLang();
+  setTimeout(drawStrings, 300);
+  window.addEventListener('resize', drawStrings);
+  window.addEventListener('keydown', handleKeyboardShortcuts);
+
+  // Teacher-only controls: add ?teacher=1 to the URL to reveal them
+  if (new URLSearchParams(window.location.search).get('teacher') === '1') {
+    document.getElementById('lock-toggle-btn').style.display = '';
+  }
+}
+
+function handleKeyboardShortcuts(event) {
+  if (document.querySelector('.screen.active')?.id !== 'screen-case') return;
+  const c = CASES.find(x => x.id === current.caseId);
+  if (!c) return;
+  const key = event.key.toLowerCase();
+  if (key === 'h') {
+    const activeEl = document.activeElement;
+    if (activeEl?.tagName.toLowerCase() === 'textarea') return;
+    event.preventDefault();
+    useHint();
+    return;
+  }
+  if (current.step === 'suspect' && key === 'enter') {
+    event.preventDefault();
+    if (!document.getElementById('confirm-suspect-btn').disabled) confirmSuspect();
+    return;
+  }
+  if (current.step === 'fix') {
+    if (['a','b','c','d'].includes(key) && c.fixType !== 'free') {
+      event.preventDefault();
+      const idx = ['a','b','c','d'].indexOf(key);
+      if (idx < c.options.length) selectFix(idx);
+      return;
+    }
+    if (key === 'enter') {
+      const activeElement = document.activeElement;
+      if (activeElement?.tagName.toLowerCase() === 'textarea') return;
+      event.preventDefault();
+      submitFix();
+      return;
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
