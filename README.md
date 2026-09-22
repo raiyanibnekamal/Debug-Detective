@@ -1,6 +1,21 @@
 # Debug Detective
 
+> A bilingual detective-style debugging game built and designed by **Md. Raiyan Ibne Kamal**.
+
+[Play on GitHub Pages](https://raiyanibnekamal.github.io/Debug-Detective/) · [View the source](https://github.com/raiyanibnekamal/Debug-Detective)
+
 Debug Detective is a bilingual browser game for learning Python debugging through an interactive detective case board. It is built as a single self-contained HTML file with HTML, CSS, and JavaScript, so it runs without a build step or external backend.
+
+## Project identity
+
+- **Author:** [Md. Raiyan Ibne Kamal](https://github.com/raiyanibnekamal)
+- **Project type:** Educational browser game / portfolio project
+- **Languages used:** HTML, CSS, JavaScript, English, and Bangla
+- **Game content:** Python debugging examples aligned with the Class 9-10 ICT learning context
+- **Architecture:** Single-page, client-side application with no server or database
+- **License:** MIT
+
+The game concept, interface, case data, scoring system, bilingual content, and implementation are authored by Md. Raiyan Ibne Kamal. NCTB is referenced as curriculum context only; this is not an official NCTB publication.
 
 ## What is inside
 
@@ -30,6 +45,12 @@ The cases use short Python snippets to teach common debugging patterns:
 
 The game is designed around the NCTB Class 9-10 ICT curriculum context, especially introductory programming and debugging practice. It is an educational practice tool, not an official NCTB publication.
 
+## Design and implementation
+
+The interface uses a noir detective evidence-board theme to turn debugging into an investigation workflow. Each case guides the learner from observing program output, to locating the faulty line, to selecting or entering a correction. Progress, ranks, XP, hints, and solved cases are stored locally in the learner's browser, so no account or personal data is required.
+
+The project intentionally has no build pipeline or dependency installation. Google Fonts are loaded at runtime for the visual style; the game logic and content remain in `index.html`.
+
 ## Run locally
 
 No installation is required. Open `index.html` in a modern browser, or serve the folder with any static file server:
@@ -42,7 +63,9 @@ Then visit `http://localhost:8000`.
 
 ## GitHub Pages
 
-Because the project is static, it can be published with GitHub Pages by selecting the repository's `main` branch and root folder as the Pages source.
+The live version is published from the `main` branch:
+
+https://raiyanibnekamal.github.io/Debug-Detective/
 
 ## Project structure
 
@@ -53,4 +76,8 @@ README.md    # Project documentation
 
 ## Credits
 
-Designed by Md. Raiyan Ibne Kamal.
+Built and designed by **Md. Raiyan Ibne Kamal**.
+
+## License
+
+This project is available under the [MIT License](LICENSE).
