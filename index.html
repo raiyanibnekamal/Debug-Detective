@@ -892,7 +892,7 @@ footer a { color: var(--amber-dim); text-decoration: none; }
     </div>
     <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
       <button class="btn btn-secondary body-text" onclick="showScreen('screen-archive')">🗂️ <span data-en="Cold Case Files" data-bn="পুরনো কেস আর্কাইভ">Cold Case Files</span></button>
-      <button id="lock-toggle-btn" class="btn btn-secondary body-text" style="display:none" onclick="toggleCaseLocking()">🔓 <span data-en="Unlock all cases" data-bn="সব কেস আনলক করো">Unlock all cases</span></button>
+      <button id="lock-toggle-btn" class="btn btn-secondary body-text" onclick="toggleCaseLocking()">🔓 <span data-en="Unlock all levels" data-bn="সব লেভেল আনলক করো">Unlock all levels</span></button>
     <button class="btn btn-secondary body-text" onclick="showScreen('screen-results')">📊 <span data-en="Teacher Summary" data-bn="শিক্ষক সারসংক্ষেপ">Teacher Summary</span></button>
       <button class="btn btn-secondary body-text" onclick="restartGame()">🔄 <span data-en="Restart Game" data-bn="গেম আবার শুরু করো">Restart Game</span></button>
     </div>
@@ -1510,9 +1510,9 @@ function updateLockToggleButton() {
   const btn = document.getElementById('lock-toggle-btn');
   if (!btn) return;
   if (STATE.unlockAllCases) {
-    btn.innerHTML = '🔒 <span data-en="Lock all cases" data-bn="সব কেস লক করো">Lock all cases</span>';
+    btn.innerHTML = '🔒 <span data-en="Lock all levels" data-bn="সব লেভেল লক করো">Lock all levels</span>';
   } else {
-    btn.innerHTML = '🔓 <span data-en="Unlock all cases" data-bn="সব কেস আনলক করো">Unlock all cases</span>';
+    btn.innerHTML = '🔓 <span data-en="Unlock all levels" data-bn="সব লেভেল আনলক করো">Unlock all levels</span>';
   }
   applyLang();
 }
